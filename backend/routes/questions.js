@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { mysql, DB_CONFIG } = require('../config/db');
 const { getNextQuestion, updateUserAbility } = require('../services/adaptiveEngine');
+const { updateQuestionDifficulty } = require('../services/updateQuestion'); // ✅ add this
 
 // Start test → get first question
 router.post('/start', async (req, res) => {
