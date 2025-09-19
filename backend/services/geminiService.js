@@ -3,14 +3,17 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function evaluateAnswer(question, answer) {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// or use "gemini-1.5-flash" if you want faster, cheaper responses
+
 
   const prompt = `
 You are evaluating a candidate's technical interview answer.
 Question: ${question}
 Answer: ${answer}
 
-Rate the answer in JSON format:
+Return ONLY JSON:
 {
   "correctness": "Yes/No/Partial",
   "completeness": 1-5,
@@ -23,7 +26,6 @@ Rate the answer in JSON format:
   const raw = result.response.text();
 
   try {
-    // Try to extract JSON safely
     const jsonStr = raw.replace(/```json|```/g, "").trim();
     return JSON.parse(jsonStr);
   } catch (err) {
