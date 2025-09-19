@@ -1,5 +1,4 @@
-// backend/services/adaptiveEngine.js
-const { mysql, DB_CONFIG } = require('../config/db');
+const { mysql, DB_CONFIG } = require("../config/db");
 
 /**
  * Update user ability (θ) using a simple 2PL IRT gradient update
@@ -9,14 +8,14 @@ async function updateUserAbility(userId, questionId, isCorrect) {
 
   // 1. Get the user’s current θ
   const [[userRow]] = await conn.execute(
-    'SELECT ability FROM users WHERE id = ?',
+    "SELECT ability FROM users WHERE id = ?",
     [userId]
   );
   let theta = userRow?.ability ?? 0;
 
   // 2. Get the question’s difficulty (b) and discrimination (a)
   const [[qRow]] = await conn.execute(
-    'SELECT difficulty, discrimination FROM questions WHERE id = ?',
+    "SELECT difficulty, discrimination FROM questions WHERE id = ?",
     [questionId]
   );
   const b = qRow?.difficulty ?? 0;     // difficulty
@@ -31,7 +30,7 @@ async function updateUserAbility(userId, questionId, isCorrect) {
 
   // 5. Save updated θ back into users table
   await conn.execute(
-    'UPDATE users SET ability = ? WHERE id = ?',
+    "UPDATE users SET ability = ? WHERE id = ?",
     [theta, userId]
   );
 
@@ -45,12 +44,12 @@ async function updateUserAbility(userId, questionId, isCorrect) {
 async function getNextQuestion(userId) {
   const conn = await mysql.createConnection(DB_CONFIG);
 
-
-  //user skills
+  // For demo purposes: hardcoded user skills
   const userSkills = ["Java", "Databases"];
+
   // 1. Get user ability θ
   const [[userRow]] = await conn.execute(
-    'SELECT ability FROM users WHERE id = ?',
+    "SELECT ability FROM users WHERE id = ?",
     [userId]
   );
   const theta = userRow?.ability ?? 0;
@@ -66,15 +65,8 @@ async function getNextQuestion(userId) {
         AND JSON_OVERLAPS(tags, ?)  
      ORDER BY diff_gap ASC, RAND()
      LIMIT 1`,
-    [theta, userId,JSON.stringify(userSkills)]
+    [theta, userId, JSON.stringify(userSkills)]
   );
-  
-  // Debug log
-console.log("Running query with:", {
-  theta,
-  userId,
-  userSkills: JSON.stringify(userSkills)
-});
 
   await conn.end();
   return rows[0] || null;

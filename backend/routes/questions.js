@@ -1,27 +1,27 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { mysql, DB_CONFIG } = require('../config/db');
-const { getNextQuestion, updateUserAbility } = require('../services/adaptiveEngine');
-const { updateQuestionDifficulty } = require('../services/updateQuestion'); // ✅ add this
+const { mysql, DB_CONFIG } = require("../config/db");
+const { getNextQuestion, updateUserAbility } = require("../services/adaptiveEngine");
+const { updateQuestionDifficulty } = require("../services/updateQuestion");
 
 // Start test → get first question
-router.post('/start', async (req, res) => {
+router.post("/start", async (req, res) => {
   const { userId } = req.body;
   try {
     const q = await getNextQuestion(userId); // θ=0 initially
     res.json({ question: q });
   } catch (err) {
-    console.error('❌ Error in /start:', err);
-    res.status(500).json({ error: 'Failed to start test' });
+    console.error("❌ Error in /start:", err);
+    res.status(500).json({ error: "Failed to start test" });
   }
 });
 
 // Submit answer → update ability & get next question
-router.post('/answer', async (req, res) => {
+router.post("/answer", async (req, res) => {
   const { userId, questionId, isCorrect, timeTakenSeconds } = req.body;
 
   if (!userId || !questionId || isCorrect == null) {
-    return res.status(400).json({ error: 'Missing fields' });
+    return res.status(400).json({ error: "Missing fields" });
   }
 
   const conn = await mysql.createConnection(DB_CONFIG);
@@ -42,15 +42,15 @@ router.post('/answer', async (req, res) => {
     await conn.end();
 
     res.json({
-      status: 'ok',
+      status: "ok",
       ability: theta,
       nextQuestion,
     });
 
   } catch (err) {
-    console.error('❌ Error in /answer:', err);
+    console.error("❌ Error in /answer:", err);
     await conn.end();
-    res.status(500).json({ error: 'Failed to process answer' });
+    res.status(500).json({ error: "Failed to process answer" });
   }
 });
 
