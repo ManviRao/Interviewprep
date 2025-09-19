@@ -27,7 +27,7 @@ async function scrapeLeetCodeWithPuppeteer() {
 
   await browser.close();
 
-  const out = [];
+  const out = []; 
   for (const t0 of raw) {
     const t = clean(t0);
     if (t.length >= 15 && t.includes('?')) {

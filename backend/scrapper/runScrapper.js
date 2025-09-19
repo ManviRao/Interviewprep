@@ -1,7 +1,12 @@
 require('dotenv').config();
 const cron = require('node-cron');
 const { mysql, DB_CONFIG } = require('../config/db');
-const { scrapeGFGJava, scrapeInterviewBitSQL } = require('./cheerioScrapper.js');
+const { 
+  scrapeGFGJava, 
+  scrapeInterviewBitSQL, 
+  scrapeGFGC,              // ✅ add C scraper
+  scrapeInterviewBitPython // ✅ add Python scraper
+} = require('./cheerioScrapper.js');
 const { scrapeLeetCodeWithPuppeteer } = require('./puppeteerScraper.js');
 const { runClassifier } = require('./classifyTopics.js'); // ✅ use runClassifier instead
 
@@ -23,6 +28,7 @@ async function saveQuestions(rawQuestions) {
 
   await conn.end();
 }
+
 async function updateDifficultyFromUserData() {
   const conn = await mysql.createConnection(DB_CONFIG);
   const [rows] = await conn.execute(`
@@ -43,10 +49,8 @@ async function updateDifficultyFromUserData() {
     else difficulty = 2;
 
     // --- Discrimination (a) ---
-    // simple heuristic: if performance is around 50%, good discriminator
     let discrimination;
     if (total < 5) {
-      // not enough data, keep default
       discrimination = 1.0;
     } else {
       discrimination = (accuracy * (1 - accuracy)) * 4; // range 0–1
@@ -65,20 +69,23 @@ async function updateDifficultyFromUserData() {
   await conn.end();
 }
 
-
 async function runOnce() {
   console.log('🔍 Scraping…');
 
-  const [gfg, ib, lc] = await Promise.allSettled([
+  const [gfgJava, ibSQL, lc, gfgC, ibPython] = await Promise.allSettled([
     scrapeGFGJava(),
     scrapeInterviewBitSQL(),
-    scrapeLeetCodeWithPuppeteer()
+    scrapeLeetCodeWithPuppeteer(),
+    scrapeGFGC(),              // ✅ C
+    scrapeInterviewBitPython() // ✅ Python
   ]);
 
   const all = [
-    ...(gfg.value || []),
-    ...(ib.value || []),
-    ...(lc.value || [])
+    ...(gfgJava.value || []),
+    ...(ibSQL.value || []),
+    ...(lc.value || []),
+    ...(gfgC.value || []),
+    ...(ibPython.value || [])
   ];
 
   // simple text dedupe
@@ -94,7 +101,7 @@ async function runOnce() {
   await saveQuestions(unique);
 
   console.log('🤖 Running classifier on unclassified questions…');
-  await runClassifier(); // ✅ instead of classifyTopicsBatch
+  await runClassifier();
 
   console.log('⚡ Updating difficulty from user attempts…');
   await updateDifficultyFromUserData();

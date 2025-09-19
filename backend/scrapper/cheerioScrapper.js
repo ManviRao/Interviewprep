@@ -52,4 +52,58 @@ async function scrapeInterviewBitSQL() {
   return out;
 }
 
-module.exports = { scrapeGFGJava, scrapeInterviewBitSQL, assignInitialDifficulty };
+
+async function scrapeGFGC() {
+  const url = 'https://www.geeksforgeeks.org/c-interview-questions/';
+  const { data } = await axios.get(url, { timeout: 30000 });
+  const $ = cheerio.load(data);
+  const out = [];
+  $('h2, h3, li').each((_, el) => {
+    const t = clean($(el).text());
+    if (t && t.length >= 10 && /[?]$/.test(t)) out.push({
+      question_text: t,
+      topic: "C",
+      tags: JSON.stringify(["C", "programming"]),
+      difficulty: assignInitialDifficulty(t),
+      discrimination: 1.0
+    });
+  });
+  return out;
+}
+
+async function scrapeInterviewBitPython() {
+  const url = 'https://www.interviewbit.com/python-interview-questions/';
+  const { data } = await axios.get(url, { timeout: 30000 });
+  const $ = cheerio.load(data);
+  const out = [];
+  $('h2, h3, li, p strong').each((_, el) => {
+    let t = clean($(el).text());
+    if (!t) return;
+    if (!/[?]$/.test(t) && /(what|why|how|define|explain)/i.test(t)) t += '?';
+    if (t.length >= 10 && /[?]$/.test(t)) out.push({
+      question_text: t,
+      topic: "Python",
+      tags: ["Python", "programming"],
+      difficulty: assignInitialDifficulty(t),
+      discrimination: 1.0
+    });
+  });
+  return out;
+}
+
+
+
+
+
+
+
+
+
+
+module.exports = { 
+  scrapeGFGJava, 
+  scrapeInterviewBitSQL, 
+  scrapeGFGC, 
+  scrapeInterviewBitPython, 
+  assignInitialDifficulty 
+};
