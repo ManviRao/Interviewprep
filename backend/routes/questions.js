@@ -25,6 +25,7 @@ router.post("/answer", async (req, res) => {
   }
 
   const conn = await mysql.createConnection(DB_CONFIG);
+
   try {
     // 1. Save attempt
     await conn.execute(
@@ -35,8 +36,42 @@ router.post("/answer", async (req, res) => {
 
     // 2. Update user ability θ
     const theta = await updateUserAbility(userId, questionId, isCorrect);
+ 
 
-    // 3. Get next question based on updated θ
+    // 2a. Update ability_at_attempt in this attempt row
+    await conn.execute(
+      `UPDATE user_attempts
+       SET ability_at_attempt = ?
+       WHERE user_id = ? AND question_id = ?`,
+      [theta, userId, questionId]
+    );
+
+    // 3. Update ability in users table
+    try {
+  const [result] = await conn.execute(
+    `UPDATE users SET ability = ? WHERE id = ?`,
+    [theta, userId]
+  );
+
+  if (result.affectedRows === 0) {
+    console.log(`User ID ${userId} not found in users table`);
+  }
+} catch (err) {
+  console.error("Error updating users table:", err);
+}
+
+
+    // 4. Update ability_at_attempt in user_attempts
+    await conn.execute(
+      `UPDATE user_attempts
+       SET ability_at_attempt = ?
+       WHERE user_id = ? AND question_id = ?
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [theta, userId, questionId]
+    );
+
+    // 5. Get next question based on updated θ
     const nextQuestion = await getNextQuestion(userId);
 
     await conn.end();
