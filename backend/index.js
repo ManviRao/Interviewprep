@@ -2,6 +2,11 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 
+//cors for allowing frontend to access backend
+const cors = require("cors");
+app.use(cors());
+
+
 // Routes
 const questionsRoutes = require("./routes/questions");
 const evaluateRoute = require("./routes/evaluate");
