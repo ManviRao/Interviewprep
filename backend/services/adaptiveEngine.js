@@ -29,7 +29,7 @@ async function updateUserAbility(userId, questionId, isCorrect) {
   return theta;
 }
 
-async function getNextQuestion(userId, skill) {
+async function getNextQuestion(userId, skill,session_id) {
   const conn = await mysql.createConnection(DB_CONFIG);
 
   const [[userRow]] = await conn.execute(
@@ -39,17 +39,30 @@ async function getNextQuestion(userId, skill) {
   const theta = userRow?.ability ?? 0;
 
   const [rows] = await conn.execute(
-    `SELECT id, question_text, topic, tags, difficulty,
-            ABS(difficulty - ?) AS diff_gap
-     FROM questions
-     WHERE id NOT IN (
-       SELECT question_id FROM user_attempts WHERE user_id = ?
-     )
-       AND JSON_CONTAINS(tags, JSON_QUOTE(?))
-     ORDER BY diff_gap ASC, RAND()
-     LIMIT 1`,
-    [theta, userId, skill]
-  );
+  `SELECT q.id, q.question_text, q.topic, q.tags, q.difficulty,
+          ABS(q.difficulty - ?) AS diff_gap
+   FROM questions q
+   WHERE q.id NOT IN (
+       -- Exclude all questions already attempted in the current session
+       SELECT ua.question_id
+       FROM user_attempts ua
+       WHERE ua.user_id = ?
+         AND ua.session_id = ?
+   )
+   AND q.id NOT IN (
+       -- Exclude correctly answered questions from past sessions
+       SELECT ua.question_id
+       FROM user_attempts ua
+       WHERE ua.user_id = ?
+         AND ua.is_correct = 1
+         AND ua.session_id <> ?
+   )
+   AND JSON_CONTAINS(q.tags, JSON_QUOTE(?))
+   ORDER BY diff_gap ASC, RAND()
+   LIMIT 1`,
+  [theta, userId, session_id, userId, session_id, skill]
+);
+
 
   await conn.end();
   return rows[0] || null;
