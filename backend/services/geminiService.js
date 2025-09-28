@@ -7,12 +7,13 @@ async function evaluateAnswer(question, answer) {
 
 // or use "gemini-1.5-flash" if you want faster, cheaper responses
 
+//Candidate answers → Evaluation using Gemini
+
 
   const prompt = `
 You are evaluating a candidate's technical interview answer.
 Question: ${question}
 Answer: ${answer}
-
 Return ONLY JSON:
 {
   "correctness": "Yes/No/Partial",

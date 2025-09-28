@@ -1,3 +1,4 @@
+//for the dynamic websites like leetcode disscussion page where content will load after the page loads
 const puppeteer = require('puppeteer');
 const { assignInitialDifficulty } = require('./cheerioScrapper');
 
@@ -5,7 +6,7 @@ function clean(s) {
   return s
     .replace(/\s+/g, ' ')
     .replace(/^\d+[\).\s-]+/, '')
-    .replace(/^[•\-–]\s*/, '')
+    .replace(/^[•\--]\s*/, '')
     .trim();
 }
 
@@ -42,5 +43,15 @@ async function scrapeLeetCodeWithPuppeteer() {
   }
   return out;
 }
+
+(async () => {
+  try {
+    const results = await scrapeLeetCodeWithPuppeteer();
+    console.log('✅ Scraping successful, found questions:\n');
+    console.log(results);
+  } catch (err) {
+    console.error('❌ Scraping failed:', err);
+  }
+})();
 
 module.exports = { scrapeLeetCodeWithPuppeteer };
