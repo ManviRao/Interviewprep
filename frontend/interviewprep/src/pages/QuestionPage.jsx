@@ -14,12 +14,14 @@ function QuestionPage() {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
   const [remainingQuestions, setRemainingQuestions] = useState(0);
+   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   // Load question and remaining count from localStorage when component mounts
   useEffect(() => {
     const storedQuestion = localStorage.getItem("currentQuestion");
     const storedRemaining = localStorage.getItem("remainingQuestions");
+
 
     if (storedQuestion) setCurrentQuestion(JSON.parse(storedQuestion));
     if (storedRemaining) setRemainingQuestions(parseInt(storedRemaining, 10));
@@ -30,6 +32,13 @@ function QuestionPage() {
 Sends POST request to http://localhost:5000/api/questions/answer with:
 userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
   const handleSubmit = async () => {
+      if (!answer.trim()) {
+    alert("⚠️ Please enter an answer before submitting.");
+    return; // Stop execution if answer is blank
+  }
+  if (submitting) return;
+  
+  setSubmitting(true);
     try {
       const userId = localStorage.getItem("userId");
       const skill = localStorage.getItem("skill");
@@ -44,7 +53,8 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
         skill,
         timeTakenSeconds: 30, // Fixed time for simplicity
       });
-      console.log("✅ Answer submitted:");
+      console.log("✅ Answer submitted:", res.data.nextQuestion);
+
       if (res.data.nextQuestion) {
         // If there are more questions, update state and localStorage
         setCurrentQuestion(res.data.nextQuestion);
@@ -59,6 +69,8 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
     } catch (err) {
       console.error("❌ Failed to submit answer", err);
       alert("Failed to submit answer. Check backend.");
+    }finally{
+       setSubmitting(false); 
     }
   };
 
@@ -109,8 +121,13 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
         </div>
         
         <button 
-          style={styles.button} 
+          style={{
+    ...styles.button,
+    opacity: submitting ? 0.6 : 1,
+    cursor: submitting ? "not-allowed" : "pointer",
+  }} 
           onClick={handleSubmit}
+            disabled={submitting}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.3)';
@@ -126,7 +143,7 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
             e.target.style.transform = 'translateY(-2px)';
           }}
         >
-          Submit Answer
+          {submitting ? "Submitting..." : "Submit Answer"}
         </button>
 
         <div style={styles.footer}>
