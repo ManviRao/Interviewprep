@@ -6,6 +6,7 @@ const { evaluateAnswer } = require("../services/geminiService");
 
 var MAX_QUESTIONS = 5;
 
+
 // Start test → first question
 router.post("/start", async (req, res) => {
   const { userId, skill } = req.body;
@@ -43,6 +44,7 @@ if (userRow.cnt === 0) {  // access the count using the alias "cnt"
       question: firstQuestion,
       remainingQuestions: MAX_QUESTIONS-1
     });
+    
   } catch (err) {
     console.error("❌ Error in /start:", err);
     await conn.end();
@@ -85,7 +87,7 @@ router.post("/answer", async (req, res) => {
 
     // 6. Count distinct questions attempted in this session
     const [[countRow]] = await conn.execute(
-      "SELECT COUNT(DISTINCT question_id) AS cnt FROM user_attempts WHERE session_id = ? and user_id = ?",
+      "SELECT COUNT(*) AS cnt FROM user_attempts WHERE session_id = ? and user_id = ?",
       [sessionId, userId]
     );
     const distinctAttempts = countRow.cnt;
