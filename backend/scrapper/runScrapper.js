@@ -4,8 +4,17 @@ const { mysql, DB_CONFIG } = require('../config/db');
 const { 
   scrapeGFGJava, 
   scrapeInterviewBitSQL, 
-  scrapeGFGC,              // ✅ add C scraper
-  scrapeInterviewBitPython // ✅ add Python scraper
+  scrapeGreatLearningC, 
+  scrapePython, 
+   scrapeGFGJavaScript,
+ scrapeCPP,
+  scrapeGFGAWS,
+  scrapeGFGDocker,
+  scrapeHTMLQuestions,
+  scrapeCSSQuestions,
+  scrapeReactQuestions,
+  scrapeNodeJSQuestions,
+   // ✅ add Python scraper
 } = require('./cheerioScrapper.js');
 const { scrapeLeetCodeWithPuppeteer } = require('./puppeteerScraper.js');
 const { runClassifier } = require('./classifyTopics.js'); // ✅ use runClassifier instead
@@ -28,6 +37,7 @@ async function saveQuestions(rawQuestions) {
 
   await conn.end();
 }
+
 
 async function updateDifficultyFromUserData() {
   const conn = await mysql.createConnection(DB_CONFIG);
@@ -72,23 +82,28 @@ async function updateDifficultyFromUserData() {
 async function runOnce() {
   console.log('🔍 Scraping…');
 
-  const [gfgJava, ibSQL, lc, gfgC, ibPython] = await Promise.allSettled([
-    scrapeGFGJava(),
-    scrapeInterviewBitSQL(),
-    scrapeLeetCodeWithPuppeteer(),
-    scrapeGFGC(),              // ✅ C
-    scrapeInterviewBitPython() // ✅ Python
-  ]);
-
-  const all = [
-    ...(gfgJava.value || []),
-    ...(ibSQL.value || []),
-    ...(lc.value || []),
-    ...(gfgC.value || []),
-    ...(ibPython.value || [])
+  const scrapers = [
+    scrapeGFGJava,
+    scrapeInterviewBitSQL,
+    scrapeLeetCodeWithPuppeteer,
+    scrapeGreatLearningC,
+    scrapePython,
+    scrapeGFGJavaScript,
+    scrapeCPP,
+    scrapeGFGAWS,
+    scrapeGFGDocker,
+    scrapeHTMLQuestions,
+    scrapeCSSQuestions,
+    scrapeReactQuestions,
+    scrapeNodeJSQuestions
   ];
 
-  // simple text dedupe
+  const results = await Promise.allSettled(scrapers.map(fn => fn()));
+
+  // flatten successful results
+  const all = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+
+  // dedupe by question text
   const seen = new Set();
   const unique = all.filter(q => {
     const key = q.question_text.toLowerCase();
@@ -108,15 +123,6 @@ async function runOnce() {
 
   console.log('✅ Scraper run complete.');
 }
-
-// run immediately if executed directly
-if (require.main === module) {
-  runOnce().catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
-}
-
 // schedule (daily 2:00 AM)
 const CRON = process.env.SCRAPER_CRON || '0 2 * * *';
 cron.schedule(CRON, () => {
@@ -125,3 +131,8 @@ cron.schedule(CRON, () => {
 });
 
 module.exports = { runOnce };
+
+// ✅ Run immediately if this file is executed directly
+if (require.main === module) {
+  runOnce().catch(console.error);
+}

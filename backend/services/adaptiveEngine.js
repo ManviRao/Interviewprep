@@ -32,14 +32,15 @@ async function updateUserAbility(userId, questionId, isCorrect) {
 async function getNextQuestion(userId, skill,session_id) {
   const conn = await mysql.createConnection(DB_CONFIG);
 
+  // get user ability
   const [[userRow]] = await conn.execute(
     "SELECT ability FROM users WHERE id = ?",
     [userId]
   );
   const theta = userRow?.ability ?? 0;
 
-  const [rows] = await conn.execute(
-  `SELECT q.id, q.question_text, q.topic, q.tags, q.difficulty,
+  // fetch next question by topic (C, Java, SQL, Python)
+  const[rows]=await conn.execute(`SELECT q.id, q.question_text, q.topic, q.tags, q.difficulty,
           ABS(q.difficulty - ?) AS diff_gap
    FROM questions q
    WHERE q.id NOT IN (
@@ -57,15 +58,24 @@ async function getNextQuestion(userId, skill,session_id) {
          AND ua.is_correct = 1
          AND ua.session_id <> ?
    )
-   AND JSON_CONTAINS(q.tags, JSON_QUOTE(?))
+   AND q.topic = ?
    ORDER BY diff_gap ASC, RAND()
    LIMIT 1`,
   [theta, userId, session_id, userId, session_id, skill]
-);
+  );
 
-
-  await conn.end();
+ await conn.end();
   return rows[0] || null;
 }
 
 module.exports = { updateUserAbility, getNextQuestion };
+
+
+
+/*Update question difficulty
+Over time, updateQuestionDifficulty(questionId) updates difficulty values in questions:
+Based on the average accuracy of all users for that question.
+Easier questions (high accuracy) get negative difficulty values.
+Harder questions (low accuracy) get positive values.
+✅ This makes the adaptive engine smarter as more candidates attempt. 
+*/

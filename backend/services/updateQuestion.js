@@ -32,3 +32,9 @@ async function updateQuestionDifficulty(questionId) {
 }
 
 module.exports = { updateQuestionDifficulty };
+
+/*Keeps the difficulty ratings accurate as more people attempt the question.
+Makes your adaptive test engine smarter:
+If a "hard" question suddenly becomes easy because everyone can solve it → it automatically gets downgraded.
+If an "easy" question is tripping people up → it gets upgraded to medium/hard.
+Ensures fair question selection for users based on their ability. */
