@@ -5,7 +5,12 @@ import { useNavigate } from "react-router-dom";
 function QuestionPage() {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
-  const [remainingQuestions, setRemainingQuestions] = useState(0);
+  const [remainingQuestions, setRemainingQuestions] = useState(0); 
+   const [submitting, setSubmitting] = useState(false);
+
+  const [status, setStatus] = useState("idle");
+  const [listening, setListening] = useState(false);
+
   const navigate = useNavigate();
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef("");
@@ -96,6 +101,7 @@ function QuestionPage() {
       const skill = localStorage.getItem("skill");
       const sessionId = localStorage.getItem("sessionId");
 
+
       // Send answer to backend and get next question or finish test
       const res = await axios.post("http://localhost:5000/api/questions/answer", {
         userId,
@@ -105,7 +111,9 @@ function QuestionPage() {
         skill,
         timeTakenSeconds: 30, // Fixed time for simplicity
       });
-      console.log("✅ Answer submitted:");
+      console.log("✅ Answer submitted:", res.data.nextQuestion);
+
+
       if (res.data.nextQuestion) {
         setCurrentQuestion(res.data.nextQuestion);
         localStorage.setItem(
@@ -186,10 +194,16 @@ function QuestionPage() {
             <span style={styles.status}>{status}</span>
           </div>
         </div>
+
         
         <button 
-          style={styles.button} 
+          style={{
+    ...styles.button,
+    opacity: submitting ? 0.6 : 1,
+    cursor: submitting ? "not-allowed" : "pointer",
+  }} 
           onClick={handleSubmit}
+            disabled={submitting}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.3)';
