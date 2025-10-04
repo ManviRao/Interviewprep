@@ -1,23 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
-
-
-/*State Variables: Question page
-currentQuestion – the question being displayed.
-answer – user’s typed answer.
-remainingQuestions – count of questions left in this session.*/
-
 
 function QuestionPage() {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
   const [remainingQuestions, setRemainingQuestions] = useState(0);
-   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const recognitionRef = useRef(null);
+  const finalTranscriptRef = useRef("");
 
-  // Load question and remaining count from localStorage when component mounts
+  // Load question + remaining count from localStorage when component mounts
   useEffect(() => {
     const storedQuestion = localStorage.getItem("currentQuestion");
     const storedRemaining = localStorage.getItem("remainingQuestions");
@@ -27,10 +20,69 @@ function QuestionPage() {
     if (storedRemaining) setRemainingQuestions(parseInt(storedRemaining, 10));
   }, []);
 
-  
-  /*Handle Submit Answer (handleSubmit)
-Sends POST request to http://localhost:5000/api/questions/answer with:
-userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
+  // Initialize SpeechRecognition
+  const initRecognition = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatus("SpeechRecognition not supported in this browser.");
+      return null;
+    }
+
+    const recog = new SpeechRecognition();
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.maxAlternatives = 1;
+    recog.lang = "en-US"; // default, can change if needed
+
+    recog.onstart = () => {
+      setStatus("listening…");
+      setListening(true);
+    };
+
+    recog.onend = () => {
+      setStatus("stopped");
+      setListening(false);
+    };
+
+    recog.onerror = (e) => {
+      setStatus("error: " + e.error);
+    };
+
+    recog.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscriptRef.current += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      const combined = finalTranscriptRef.current + interim;
+      setAnswer(combined); // updates textarea with speech text
+    };
+
+    return recog;
+  };
+
+  const handleStartListening = () => {
+    if (recognitionRef.current) recognitionRef.current.stop(); // reset
+    recognitionRef.current = initRecognition();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error("start error:", err);
+      }
+    }
+  };
+
+  const handleStopListening = () => {
+    if (recognitionRef.current) recognitionRef.current.stop();
+  };
+
+  // Handle Submit Answer
   const handleSubmit = async () => {
       if (!answer.trim()) {
     alert("⚠️ Please enter an answer before submitting.");
@@ -53,17 +105,21 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
         skill,
         timeTakenSeconds: 30, // Fixed time for simplicity
       });
-      console.log("✅ Answer submitted:", res.data.nextQuestion);
-
+      console.log("✅ Answer submitted:");
       if (res.data.nextQuestion) {
-        // If there are more questions, update state and localStorage
         setCurrentQuestion(res.data.nextQuestion);
-        localStorage.setItem("currentQuestion", JSON.stringify(res.data.nextQuestion));
+        localStorage.setItem(
+          "currentQuestion",
+          JSON.stringify(res.data.nextQuestion)
+        );
         setRemainingQuestions(res.data.remainingQuestions);
-        localStorage.setItem("remainingQuestions", res.data.remainingQuestions);
-        setAnswer(""); // Clear answer for next question
+        localStorage.setItem(
+          "remainingQuestions",
+          res.data.remainingQuestions
+        );
+        setAnswer("");
+        finalTranscriptRef.current = ""; // reset speech transcript
       } else {
-        // If no more questions, navigate to summary page
         navigate("/summary");
       }
     } catch (err) {
@@ -91,7 +147,7 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
           <h1 style={styles.title}>Question</h1>
           <p style={styles.subtitle}>Test your knowledge and skills</p>
         </div>
-        
+
         <div style={styles.questionSection}>
           <h3 style={styles.questionLabel}>Question:</h3>
           <p style={styles.questionText}>{currentQuestion.question_text}</p>
@@ -102,32 +158,38 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
           <textarea
             style={styles.textarea}
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            onChange={(e) => {
+              setAnswer(e.target.value);
+              finalTranscriptRef.current = e.target.value;
+            }}
             rows={6}
-            placeholder="Type your answer here..."
-            onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
-            onMouseLeave={(e) => e.target.style.borderColor = '#e2e8f0'}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#667eea';
-              e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-              e.target.style.transform = 'translateY(-1px)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#e2e8f0';
-              e.target.style.boxShadow = 'none';
-              e.target.style.transform = 'translateY(0)';
-            }}
+            placeholder="Type or speak your answer here..."
           />
+          <div style={styles.controls}>
+            <button
+              style={{
+                ...styles.controlButton,
+                background: listening ? "#718096" : "#667eea",
+              }}
+              onClick={handleStartListening}
+              disabled={listening}
+            >
+              🎙️ Start
+            </button>
+            <button
+              style={styles.controlButton}
+              onClick={handleStopListening}
+              disabled={!listening}
+            >
+              ⏹ Stop
+            </button>
+            <span style={styles.status}>{status}</span>
+          </div>
         </div>
         
         <button 
-          style={{
-    ...styles.button,
-    opacity: submitting ? 0.6 : 1,
-    cursor: submitting ? "not-allowed" : "pointer",
-  }} 
+          style={styles.button} 
           onClick={handleSubmit}
-            disabled={submitting}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.3)';
@@ -148,7 +210,8 @@ userId, sessionId, questionId, candidateAnswer, skill, timeTakenSeconds*/
 
         <div style={styles.footer}>
           <p style={styles.remainingText}>
-            Remaining Questions: <span style={styles.remainingCount}>{remainingQuestions}</span>
+            Remaining Questions:{" "}
+            <span style={styles.remainingCount}>{remainingQuestions}</span>
           </p>
         </div>
       </div>
@@ -164,7 +227,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
   card: {
     background: "white",
@@ -173,57 +236,45 @@ const styles = {
     boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
     maxWidth: 700,
     width: "100%",
-    textAlign: "center"
+    textAlign: "center",
   },
-  header: {
-    marginBottom: 32
-  },
-  icon: {
-    fontSize: "4rem",
-    marginBottom: 16
-  },
+  header: { marginBottom: 32 },
+  icon: { fontSize: "4rem", marginBottom: 16 },
   title: {
     fontSize: "2.2rem",
     fontWeight: "700",
     color: "#2d3748",
     margin: "0 0 8px 0",
-    lineHeight: 1.2
+    lineHeight: 1.2,
   },
-  subtitle: {
-    fontSize: "1.1rem",
-    color: "#718096",
-    margin: 0
-  },
+  subtitle: { fontSize: "1.1rem", color: "#718096", margin: 0 },
   questionSection: {
     textAlign: "left",
     marginBottom: 24,
     background: "#f7fafc",
     padding: 20,
     borderRadius: 12,
-    borderLeft: "4px solid #667eea"
+    borderLeft: "4px solid #667eea",
   },
   questionLabel: {
     fontSize: "1.1rem",
     fontWeight: "600",
     color: "#4a5568",
-    margin: "0 0 12px 0"
+    margin: "0 0 12px 0",
   },
   questionText: {
     fontSize: "1.2rem",
     color: "#2d3748",
     lineHeight: 1.6,
-    margin: 0
+    margin: 0,
   },
-  answerSection: {
-    textAlign: "left",
-    marginBottom: 24
-  },
+  answerSection: { textAlign: "left", marginBottom: 24 },
   label: {
     display: "block",
     marginBottom: 8,
     fontWeight: "600",
     color: "#4a5568",
-    fontSize: "1rem"
+    fontSize: "1rem",
   },
   textarea: {
     width: "100%",
@@ -236,8 +287,23 @@ const styles = {
     outline: "none",
     resize: "vertical",
     minHeight: "120px",
-    fontFamily: "inherit"
+    fontFamily: "inherit",
   },
+  controls: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginTop: "10px",
+  },
+  controlButton: {
+    padding: "10px 16px",
+    border: "none",
+    borderRadius: 8,
+    color: "white",
+    cursor: "pointer",
+    fontSize: "0.95rem",
+  },
+  status: { fontSize: "0.9rem", color: "#4a5568" },
   button: {
     width: "100%",
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -249,22 +315,11 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
-    marginBottom: 20
+    marginBottom: 20,
   },
-  footer: {
-    borderTop: "1px solid #e2e8f0",
-    paddingTop: 20
-  },
-  remainingText: {
-    fontSize: "1rem",
-    color: "#718096",
-    margin: 0
-  },
-  remainingCount: {
-    fontWeight: "700",
-    color: "#667eea",
-    fontSize: "1.2rem"
-  },
+  footer: { borderTop: "1px solid #e2e8f0", paddingTop: 20 },
+  remainingText: { fontSize: "1rem", color: "#718096", margin: 0 },
+  remainingCount: { fontWeight: "700", color: "#667eea", fontSize: "1.2rem" },
   loadingContainer: {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -272,7 +327,7 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
   spinner: {
     width: 50,
@@ -281,16 +336,12 @@ const styles = {
     borderLeft: "4px solid #667eea",
     borderRadius: "50%",
     animation: "spin 1s linear infinite",
-    marginBottom: 20
+    marginBottom: 20,
   },
-  loadingText: {
-    fontSize: "1.5rem",
-    color: "white",
-    fontWeight: "600"
-  }
+  loadingText: { fontSize: "1.5rem", color: "white", fontWeight: "600" },
 };
 
-// Add CSS animations
+// CSS animations
 const styleSheet = document.styleSheets[0];
 const addStyles = `
   @keyframes spin {
@@ -298,7 +349,6 @@ const addStyles = `
     100% { transform: rotate(360deg); }
   }
 `;
-
 if (styleSheet) {
   styleSheet.insertRule(addStyles, styleSheet.cssRules.length);
 }
