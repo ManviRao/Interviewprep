@@ -3,11 +3,13 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { mysql, DB_CONFIG } = require("../config/db");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });//for classification task
 
 /**
- * Helper: wait
+ * Helper: wait Simple delay function used between batches to avoid API rate limits.
+sleep(40000) → waits 40 seconds.
  */
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -17,10 +19,13 @@ function sleep(ms) {
  */
 async function classifyBatch(questions) {
   const prompt = `You are a strict JSON generator.
-Return ONLY a JSON array, no explanations, no markdown fences.Classify the following interview questions into JSON:
-  Each item should look like:
-  { "question_text": "...", "topic": "...", "tags": ["..."], "difficulty": 0, "discrimination": 1.0 }
-
+Return ONLY a JSON array, no explanations, no markdown fences.
+Classify the following interview questions into JSON with the format:
+{ "question_text": "...", "topic": "C|Java|SQL|Python|C++|React|Node|Javascript|Aws|Docker|Html|Css", "tags": ["..."], "difficulty": 0, "discrimination": 1.0 }
+Rules:
+- The "topic" must be one of ONLY: "C", "Java", "SQL", "Python", "C++", "React", "Node", "Javascript", "Aws", "Docker", "Html", "Css".
+- Do not invent new topics. If unclear, choose the closest from the list.
+- "tags" should be short keywords related to the question.
 Questions:
 ${questions.map((q, i) => `${i + 1}. ${q.question_text}`).join("\n")}`;
 
@@ -108,3 +113,17 @@ if (require.main === module) {
 }
 
 module.exports = { runClassifier };
+
+
+
+
+
+/*Step by step explanation:
+1.Fetches unclassified questions (topic = NULL).
+2.Loops forever until all questions are classified.
+3.Splits the questions into small batches (batchSize = 2) to avoid hitting API limits.
+4.Sends each batch to Gemini AI to classify them.
+5.Cleans and parses the AI JSON output.
+6.Saves classification back into the database.
+7.Waits 40 seconds between batches.
+8.Repeats until no unclassified questions remain. */

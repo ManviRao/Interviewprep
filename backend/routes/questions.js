@@ -1,3 +1,4 @@
+// Adaptive testing routes: start test, submit answer, get summary
 const express = require("express");
 const router = express.Router();
 const { mysql, DB_CONFIG } = require("../config/db");
@@ -34,12 +35,12 @@ if (userRow.cnt === 0) {  // access the count using the alias "cnt"
     const sessionId = sessionResult.insertId;
 
     // 2. Fetch first question
-    const firstQuestion = await getNextQuestion(userId, skill,sessionId,[]);
-  
+     const firstQuestion = await getNextQuestion(userId, skill,sessionId,[]);
+
     await conn.end();
 
     res.json({ 
-      sessionId,          // return session ID
+      sessionId,          //return session ID
        sessionId, // return session ID because frontend needs to send it back with each answer
       question: firstQuestion,
       remainingQuestions: MAX_QUESTIONS-1
@@ -54,11 +55,14 @@ if (userRow.cnt === 0) {  // access the count using the alias "cnt"
 
 // Submit answer → evaluate with Gemini, update θ, fetch next
 router.post("/answer", async (req, res) => {
-  console.log(req.body);
+ console.log(req.body);
+
+
   const { userId, questionId, candidateAnswer, skill, sessionId, timeTakenSeconds } = req.body;
   if (!userId || !questionId || !candidateAnswer || !skill || !sessionId) {
     return res.status(400).json({ error: "Missing fields" });
   }
+  console.log(req.body);
 
   const conn = await mysql.createConnection(DB_CONFIG);
 
@@ -69,10 +73,10 @@ router.post("/answer", async (req, res) => {
       [sessionId, userId, questionId]
     );
 
-    // if (existingAttempt) {
-    //   await conn.end();
-    //   return res.status(400).json({ error: "Question already attempted" });
-    // }
+    //if (existingAttempt) {
+      //await conn.end();
+      //return res.status(400).json({ error: "Question already attempted" });
+    //}
     // 1. Fetch question text
     const [[qRow]] = await conn.execute(
       "SELECT question_text FROM questions WHERE id = ?",
@@ -83,7 +87,7 @@ router.post("/answer", async (req, res) => {
     const evaluation = await evaluateAnswer(qRow.question_text, candidateAnswer);
     const isCorrect = evaluation.correctness?.toLowerCase() === "yes";
 
-   
+
 
     // 6. Count distinct questions attempted in this session
     const [[countRow]] = await conn.execute(
@@ -100,7 +104,7 @@ router.post("/answer", async (req, res) => {
       );
       const attemptedIds = attemptedRows.map(r => r.question_id);
 
-      nextQuestion = await getNextQuestion(userId, skill,sessionId,attemptedIds);
+      nextQuestion = await getNextQuestion(userId, skill, sessionId, attemptedIds);
     }
 
      // 3. Save attempt linked to session
