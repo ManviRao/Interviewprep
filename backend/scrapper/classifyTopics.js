@@ -17,17 +17,17 @@ function sleep(ms) {
 /**
  * Classify a batch of questions
  */
-async function classifyBatch(scraped_questions) {
+async function classifyBatch(questions) {
   const prompt = `You are a strict JSON generator.
 Return ONLY a JSON array, no explanations, no markdown fences.
-Classify the following interview scraped_questions into JSON with the format:
+Classify the following interview questions into JSON with the format:
 { "question_text": "...", "topic": "C|Java|SQL|Python|C++|React|Node|Javascript|Aws|Docker|Html|Css", "tags": ["..."], "difficulty": 0, "discrimination": 1.0 }
 Rules:
 - The "topic" must be one of ONLY: "C", "Java", "SQL", "Python", "C++", "React", "Node", "Javascript", "Aws", "Docker", "Html", "Css".
 - Do not invent new topics. If unclear, choose the closest from the list.
 - "tags" should be short keywords related to the question.
 Questions:
-${scraped_questions.map((q, i) => `${i + 1}. ${q.question_text}`).join("\n")}`;
+${questions.map((q, i) => `${i + 1}. ${q.question_text}`).join("\n")}`;
 
   const result = await model.generateContent(prompt);
   return result.response.text();
@@ -39,7 +39,7 @@ ${scraped_questions.map((q, i) => `${i + 1}. ${q.question_text}`).join("\n")}`;
 async function getUnclassifiedQuestions(limit = 50) {
   const conn = await mysql.createConnection(DB_CONFIG);
   const [rows] = await conn.execute(
-    `SELECT id, question_text FROM scraped_questions WHERE topic IS NULL LIMIT ${limit}`
+    `SELECT id, question_text FROM questions WHERE topic IS NULL LIMIT ${limit}`
   );
   await conn.end();
   return rows;
@@ -51,7 +51,7 @@ async function getUnclassifiedQuestions(limit = 50) {
 async function saveClassification(id, topic, tags, difficulty, discrimination) {
   const conn = await mysql.createConnection(DB_CONFIG);
   await conn.execute(
-    "UPDATE scraped_questions SET topic=?, tags=?, difficulty=?, discrimination=? WHERE id=?",
+    "UPDATE questions SET topic=?, tags=?, difficulty=?, discrimination=? WHERE id=?",
     [topic, JSON.stringify(tags), difficulty, discrimination, id]
   );
   await conn.end();
@@ -64,15 +64,15 @@ async function runClassifier() {
   console.log("Fetching unclassified questions…");
 
   while (true) {
-    const scraped_questions = await getUnclassifiedQuestions(50); // batch of 50
-    if (scraped_questions.length === 0) {
+    const questions = await getUnclassifiedQuestions(50); // batch of 50
+    if (questions.length === 0) {
       console.log("🎉 All questions classified!");
       break;
     }
 
     const batchSize = 2;
-    for (let i = 0; i < scraped_questions.length; i += batchSize) {
-      const batch = scraped_questions.slice(i, i + batchSize);
+    for (let i = 0; i < questions.length; i += batchSize) {
+      const batch = questions.slice(i, i + batchSize);
 
       try {
         console.log(`Classifying batch ${i / batchSize + 1}…`);
@@ -113,7 +113,6 @@ if (require.main === module) {
 }
 
 module.exports = { runClassifier };
-
 
 
 

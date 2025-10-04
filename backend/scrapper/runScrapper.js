@@ -21,7 +21,7 @@ const { runClassifier } = require('./classifyTopics.js'); // ✅ use runClassifi
 
 async function saveQuestions(rawQuestions) {
   const conn = await mysql.createConnection(DB_CONFIG);
-  const sql = `INSERT IGNORE INTO scraped_questions
+  const sql = `INSERT IGNORE INTO questions
     (question_text, topic, tags, difficulty, discrimination)
     VALUES (?, ?, ?, ?, ?)`;
 
@@ -131,3 +131,8 @@ cron.schedule(CRON, () => {
 });
 
 module.exports = { runOnce };
+
+// ✅ Run immediately if this file is executed directly
+if (require.main === module) {
+  runOnce().catch(console.error);
+}

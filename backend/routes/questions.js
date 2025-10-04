@@ -102,7 +102,7 @@ router.post("/answer", async (req, res) => {
       );
       const attemptedIds = attemptedRows.map(r => r.question_id);
 
-      nextQuestion = await getNextQuestion(userId, skill, attemptedIds);
+      nextQuestion = await getNextQuestion(userId, skill, sessionId, attemptedIds);
     }
 
      // 3. Save attempt linked to session

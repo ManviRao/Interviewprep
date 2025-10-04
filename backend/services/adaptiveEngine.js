@@ -29,7 +29,7 @@ async function updateUserAbility(userId, questionId, isCorrect) {
   return theta;
 }
 
-async function getNextQuestion(userId, skill) {
+async function getNextQuestion(userId, skill,session_id) {
   const conn = await mysql.createConnection(DB_CONFIG);
 
   // get user ability
@@ -40,7 +40,7 @@ async function getNextQuestion(userId, skill) {
   const theta = userRow?.ability ?? 0;
 
   // fetch next question by topic (C, Java, SQL, Python)
-  `SELECT q.id, q.question_text, q.topic, q.tags, q.difficulty,
+  const[rows]=await conn.execute(`SELECT q.id, q.question_text, q.topic, q.tags, q.difficulty,
           ABS(q.difficulty - ?) AS diff_gap
    FROM questions q
    WHERE q.id NOT IN (
@@ -58,11 +58,11 @@ async function getNextQuestion(userId, skill) {
          AND ua.is_correct = 1
          AND ua.session_id <> ?
    )
-   AND JSON_CONTAINS(q.tags, JSON_QUOTE(?))
+   AND q.topic = ?
    ORDER BY diff_gap ASC, RAND()
    LIMIT 1`,
-  [theta, userId, session_id, userId, session_id, skill];
-
+  [theta, userId, session_id, userId, session_id, skill]
+  );
 
  await conn.end();
   return rows[0] || null;
