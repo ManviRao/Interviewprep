@@ -1,41 +1,28 @@
-// classifyTopics.js (CommonJS)
+require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { mysql, DB_CONFIG } = require("../config/db");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });//for classification task
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-/**
- * Helper: wait Simple delay function used between batches to avoid API rate limits.
-sleep(40000) → waits 40 seconds.
- */
+// Shared scraping flag
+let scraping = false;
 
+function startScraping() { scraping = true; }
+function stopScraping() { scraping = false; }
+function isScraping() { return scraping; }
+
+// Interruptible sleep
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(resolve => {
+    const interval = setInterval(() => {
+      if (!scraping) { clearInterval(interval); resolve(); }
+    }, 100);
+    setTimeout(() => { clearInterval(interval); resolve(); }, ms);
+  });
 }
 
-/**
- * Classify a batch of questions
- */
-async function classifyBatch(questions) {
-  const prompt = `You are a strict JSON generator.
-Return ONLY a JSON array, no explanations, no markdown fences.
-Classify the following interview questions into JSON with the format:
-{ "question_text": "...", "topic": "C|Java|SQL|Python|C++|React|Node|Javascript|Aws|Docker|Html|Css", "tags": ["..."], "difficulty": 0, "discrimination": 1.0 }
-Rules:
-- The "topic" must be one of ONLY: "C", "Java", "SQL", "Python", "C++", "React", "Node", "Javascript", "Aws", "Docker", "Html", "Css".
-- Do not invent new topics. If unclear, choose the closest from the list.
-- "tags" should be short keywords related to the question.
-Questions:
-${questions.map((q, i) => `${i + 1}. ${q.question_text}`).join("\n")}`;
-
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-}
-
-/**
- * Get unclassified questions from DB
- */
+// Fetch unclassified questions
 async function getUnclassifiedQuestions(limit = 50) {
   const conn = await mysql.createConnection(DB_CONFIG);
   const [rows] = await conn.execute(
@@ -45,9 +32,7 @@ async function getUnclassifiedQuestions(limit = 50) {
   return rows;
 }
 
-/**
- * Save classification back to DB
- */
+// Save classification to DB
 async function saveClassification(id, topic, tags, difficulty, discrimination) {
   const conn = await mysql.createConnection(DB_CONFIG);
   await conn.execute(
@@ -57,14 +42,28 @@ async function saveClassification(id, topic, tags, difficulty, discrimination) {
   await conn.end();
 }
 
-/**
- * Main flow
- */
+// Classify batch using Gemini AI
+async function classifyBatch(questions) {
+  const prompt = `You are a strict JSON generator.
+Return ONLY a JSON array, no explanations, no markdown fences.
+Classify the following interview questions into JSON with the format:
+{ "question_text": "...", "topic": "C|Java|SQL|Python|C++|React|Node|Javascript|Aws|Docker|Html|Css", "tags": ["..."], "difficulty": 0, "discrimination": 1.0 }
+Rules:
+- Only use the listed topics.
+Questions:
+${questions.map((q, i) => `${i + 1}. ${q.question_text}`).join("\n")}`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
+
+// Main classifier loop
 async function runClassifier() {
+  startScraping();
   console.log("Fetching unclassified questions…");
 
-  while (true) {
-    const questions = await getUnclassifiedQuestions(50); // batch of 50
+  while (isScraping()) {
+    const questions = await getUnclassifiedQuestions(50);
     if (questions.length === 0) {
       console.log("🎉 All questions classified!");
       break;
@@ -72,11 +71,11 @@ async function runClassifier() {
 
     const batchSize = 2;
     for (let i = 0; i < questions.length; i += batchSize) {
-      const batch = questions.slice(i, i + batchSize);
+      if (!isScraping()) break;
 
+      const batch = questions.slice(i, i + batchSize);
       try {
         console.log(`Classifying batch ${i / batchSize + 1}…`);
-
         const result = await classifyBatch(batch);
 
         let clean = result.replace(/```json|```/g, "").trim();
@@ -84,8 +83,10 @@ async function runClassifier() {
         if (!Array.isArray(parsed)) throw new Error("Expected array");
 
         for (let j = 0; j < batch.length; j++) {
+          if (!isScraping()) break;
           const q = parsed[j];
           if (!q) continue;
+
           await saveClassification(
             batch[j].id,
             q.topic || "Uncategorized",
@@ -93,6 +94,7 @@ async function runClassifier() {
             q.difficulty ?? 0,
             q.discrimination ?? 1.0
           );
+
           console.log(`✅ Saved Q${batch[j].id} → ${q.topic}`);
         }
       } catch (err) {
@@ -105,25 +107,8 @@ async function runClassifier() {
   }
 
   console.log("Done for today 🚀");
+  stopScraping();
 }
 
-// Run directly
-if (require.main === module) {
-  runClassifier();
-}
-
-module.exports = { runClassifier };
-
-
-
-
-
-/*Step by step explanation:
-1.Fetches unclassified questions (topic = NULL).
-2.Loops forever until all questions are classified.
-3.Splits the questions into small batches (batchSize = 2) to avoid hitting API limits.
-4.Sends each batch to Gemini AI to classify them.
-5.Cleans and parses the AI JSON output.
-6.Saves classification back into the database.
-7.Waits 40 seconds between batches.
-8.Repeats until no unclassified questions remain. */
+// Export functions for external control
+module.exports = { runClassifier, startScraping, stopScraping, isScraping };
