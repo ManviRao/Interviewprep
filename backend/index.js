@@ -11,7 +11,7 @@ app.use(cors());
 const questionsRoutes = require("./routes/questions");
 const evaluateRoute = require("./routes/evaluate");
 const scraperRoutes = require('./routes/runScraper');//for scrape button page
-
+const emotionRoute = require("./routes/emotion");
 app.use(express.json());
 
 // Root test endpoint
