@@ -1,0 +1,6 @@
+{
+    "software developer": ["Python", "Java", "C++", "JavaScript", "React", "Node.js", "SQL"],
+    "ml engineer": ["Python", "TensorFlow", "PyTorch", "Machine Learning", "Deep Learning", "Data Science"],
+    "data analyst": ["Excel", "SQL", "Python", "Power BI", "Tableau", "Data Visualization"],
+    "web developer": ["HTML", "CSS", "JavaScript", "React", "Node.js", "MongoDB"]
+}
