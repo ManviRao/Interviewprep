@@ -15,7 +15,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       setMessage(data.message || "Scraper run complete!");
-      setIsScraping(false);
+      setIsScraping(true);
     } catch (err) {
       setMessage("Error: " + err.message);
       setIsScraping(false);
@@ -28,7 +28,7 @@ export default function AdminPage() {
     setLoading(true);
     setMessage("Stopping scraper…");
     try {
-      const res = await fetch("http://localhost:5000/api/stop-scraper", {
+      const res = await fetch("http://localhost:5000/api/run-scraper/stop-scraper", {
         method: "POST",
       });
       const data = await res.json();

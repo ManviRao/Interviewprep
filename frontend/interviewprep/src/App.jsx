@@ -3,13 +3,13 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import StartTestPage from "./pages/StartTestPage";
 import QuestionPage from "./pages/QuestionPage";
 import SummaryPage from "./pages/SummaryPage";
-<<<<<<< HEAD
+
 import ChooseTestTypePage from "./pages/chooseTestTypePage";
 import TestBasedOnSkillPage from "./pages/TestBasedOnSkillPage";
-=======
+
 import ScraperButton from "./pages/ScraperButton"; // adjust path if needed
 
->>>>>>> 3fa2522c87afe911d2fb98010ab2440a41df5539
+
 
 function App() {
   return (
