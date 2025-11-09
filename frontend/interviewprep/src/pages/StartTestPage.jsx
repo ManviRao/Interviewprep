@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 /*React Router useNavigate handles page transitions
@@ -11,9 +11,25 @@ No full page reload happens; React just switches the component.
 */
 
 function StartTestPage() {
-  const [userId, setUserId] = useState(2);//default userId to 2
+  const [userId, setUserId] = useState(""); // CHANGED: from 2 to empty string
   const [skill, setSkill] = useState("java"); //default skill to java
+  const [userName, setUserName] = useState(""); // ADDED: for user display
   const navigate = useNavigate();
+
+  // ADDED: Authentication check
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userId");
+    const storedUserName = localStorage.getItem("userName");
+    
+    if (!storedUserId) {
+      // Redirect to login if not authenticated
+      navigate("/login");
+      return;
+    }
+    
+    setUserId(storedUserId);
+    setUserName(storedUserName || "User");
+  }, [navigate]);
 
 
 /*That function:
@@ -25,7 +41,7 @@ Navigates you to /question page (using React Router). */
   const handleStart = async () => {
     try {
       const res = await axios.post("http://localhost:5000/api/questions/start", {  //sends post request to backend
-        userId,       
+        userId: parseInt(userId), // CHANGED: Use authenticated user ID       
         skill,
       });
 
@@ -52,36 +68,34 @@ Saves these details in localStorage so other pages can access them
     }
   };
 
+  // ADDED: Loading state for authentication
+  if (!userId) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.loadingContainer}>
+            <div style={styles.spinner}></div>
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.icon}>🎯</div>
           <h1 style={styles.title}>Let's Begin the Test</h1>
-          <p style={styles.subtitle}>Get ready to showcase your skills</p>
+          {/* UPDATED: Welcome message with user name */}
+          <p style={styles.subtitle}>Welcome back{userName ? `, ${userName}` : ''}! Get ready to showcase your skills</p>
         </div>
         
         <div style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>User ID</label>
-            <input
-              style={styles.input}
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              type="number"
-              onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
-              onMouseLeave={(e) => e.target.style.borderColor = '#e2e8f0'}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#667eea';
-                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                e.target.style.transform = 'translateY(-1px)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e2e8f0';
-                e.target.style.boxShadow = 'none';
-                e.target.style.transform = 'translateY(0)';
-              }}
-            />
+          {/* ADDED: User info display - REMOVED manual User ID input */}
+          <div style={styles.userInfo}>
+            <strong>User:</strong> {userName || `ID: ${userId}`}
           </div>
           
           <div style={styles.inputGroup}>
@@ -172,6 +186,16 @@ const styles = {
   form: {
     textAlign: "left"
   },
+  // ADDED: User info style
+  userInfo: {
+    background: "#f7fafc",
+    padding: "12px 16px",
+    borderRadius: 8,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#4a5568",
+    border: "1px solid #e2e8f0"
+  },
   inputGroup: {
     marginBottom: 24
   },
@@ -205,7 +229,37 @@ const styles = {
     transition: "all 0.3s ease",
     marginTop: 8,
     outline: "none"
+  },
+  // ADDED: Loading styles
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40
+  },
+  spinner: {
+    width: 40,
+    height: 40,
+    border: "4px solid #e2e8f0",
+    borderLeft: "4px solid #667eea",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+    marginBottom: 16
   }
 };
+
+// ADD CSS animation
+const styleSheet = document.styleSheets[0];
+const addStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+if (styleSheet) {
+  styleSheet.insertRule(addStyles, styleSheet.cssRules.length);
+}
 
 export default StartTestPage;
