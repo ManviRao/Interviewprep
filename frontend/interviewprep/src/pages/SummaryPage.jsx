@@ -1,6 +1,162 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+// Emotion color mapping
+const getEmotionColor = (emotion) => {
+  const emotionMap = {
+    'happy': '#48bb78',      // green
+    'surprise': '#38b2ac',   // teal
+    'neutral': '#4299e1',    // blue
+    'sad': '#ed8936',        // orange
+    'fear': '#ecc94b',       // yellow
+    'angry': '#f56565',      // red
+    'disgust': '#9f7aea',    // purple
+    'no_face': '#a0aec0',    // gray
+    'default': '#718096'
+  };
+  return emotionMap[emotion] || emotionMap['default'];
+};
+
+const getConfidenceColor = (confidenceLevel) => {
+  const confidenceMap = {
+    'Confident': '#48bb78',           // green
+    'Moderately Confident': '#ecc94b', // yellow
+    'Low Confidence': '#ed8936',       // orange
+    'Tensed/Stressed': '#f56565',      // red
+    'Neutral': '#4299e1',              // blue
+    'No Data': '#a0aec0'               // gray
+  };
+  return confidenceMap[confidenceLevel] || confidenceMap['Neutral'];
+};
+
+// Emotion Chart Component
+const EmotionChart = ({ emotionData }) => {
+  if (!emotionData || emotionData.length === 0) {
+    return (
+      <div style={chartStyles.chartContainer}>
+        <h3 style={chartStyles.chartTitle}>Emotion Analysis</h3>
+        <p style={chartStyles.noDataText}>No emotion data available</p>
+      </div>
+    );
+  }
+
+  const emotionCounts = emotionData.reduce((acc, data) => {
+    const emotion = data.emotion || 'neutral';
+    acc[emotion] = (acc[emotion] || 0) + 1;
+    return acc;
+  }, {});
+
+  const totalSamples = emotionData.length;
+  const emotions = Object.keys(emotionCounts);
+
+  return (
+    <div style={chartStyles.chartContainer}>
+      <h3 style={chartStyles.chartTitle}>Emotion Distribution</h3>
+      <p style={chartStyles.chartDescription}>
+        {totalSamples} emotion samples collected during test
+      </p>
+      
+      <div style={chartStyles.emotionBars}>
+        {emotions.map(emotion => {
+          const count = emotionCounts[emotion];
+          const percentage = (count / totalSamples) * 100;
+          const color = getEmotionColor(emotion);
+          
+          return (
+            <div key={emotion} style={chartStyles.emotionBar}>
+              <div style={chartStyles.emotionLabel}>
+                <span style={chartStyles.emotionName}>{emotion}</span>
+                <span style={chartStyles.emotionCount}>{count}</span>
+              </div>
+              <div style={chartStyles.barContainer}>
+                <div 
+                  style={{
+                    ...chartStyles.barFill,
+                    width: `${percentage}%`,
+                    background: color
+                  }}
+                ></div>
+              </div>
+              <span style={chartStyles.percentage}>{percentage.toFixed(1)}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Confidence Level Component
+const ConfidenceLevel = ({ emotionStats }) => {
+  if (!emotionStats) {
+    return (
+      <div style={confidenceStyles.container}>
+        <h3 style={confidenceStyles.title}>Confidence Level</h3>
+        <p style={confidenceStyles.noData}>No emotion data available</p>
+      </div>
+    );
+  }
+
+  const { confidenceLevel, engagement, stress, dominantEmotion, totalSamples } = emotionStats;
+  const color = getConfidenceColor(confidenceLevel);
+
+  return (
+    <div style={confidenceStyles.container}>
+      <h3 style={confidenceStyles.title}>Confidence Analysis</h3>
+      
+      <div 
+        style={{
+          ...confidenceStyles.confidenceBadge,
+          background: color
+        }}
+      >
+        <strong>{confidenceLevel}</strong>
+      </div>
+      
+      <div style={confidenceStyles.stats}>
+        <div style={confidenceStyles.statItem}>
+          <span style={confidenceStyles.statLabel}>Dominant Emotion:</span>
+          <span style={confidenceStyles.statValue}>{dominantEmotion}</span>
+        </div>
+        <div style={confidenceStyles.statItem}>
+          <span style={confidenceStyles.statLabel}>Engagement:</span>
+          <span style={confidenceStyles.statValue}>{engagement}%</span>
+        </div>
+        <div style={confidenceStyles.statItem}>
+          <span style={confidenceStyles.statLabel}>Stress Level:</span>
+          <span style={confidenceStyles.statValue}>{stress}%</span>
+        </div>
+        <div style={confidenceStyles.statItem}>
+          <span style={confidenceStyles.statLabel}>Total Samples:</span>
+          <span style={confidenceStyles.statValue}>{totalSamples}</span>
+        </div>
+      </div>
+
+      <div style={confidenceStyles.feedback}>
+        <h4>Emotional Feedback:</h4>
+        {confidenceLevel === 'Confident' && (
+          <p>🎯 Excellent! You maintained high confidence and composure throughout the test.</p>
+        )}
+        {confidenceLevel === 'Moderately Confident' && (
+          <p>👍 Good composure. With more practice, you can build even greater confidence.</p>
+        )}
+        {confidenceLevel === 'Low Confidence' && (
+          <p>💡 You showed some uncertainty. Practice and preparation will help build confidence.</p>
+        )}
+        {confidenceLevel === 'Tensed/Stressed' && (
+          <p>🧘 Consider relaxation techniques before interviews to manage stress better.</p>
+        )}
+        {confidenceLevel === 'Neutral' && (
+          <p>😐 You maintained a neutral composure throughout the assessment.</p>
+        )}
+        {confidenceLevel === 'No Data' && (
+          <p>📷 No emotion data was collected during this session.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Simple chart components since we're not using external libraries
 const ProgressBar = ({ value, max, label, color }) => (
   <div style={chartStyles.progressContainer}>
@@ -120,7 +276,7 @@ const AbilityChart = ({ finalAbility, attempts }) => {
         </div>
       </div>
       
-      {/* X-axis labels - FIXED */}
+      {/* X-axis labels */}
       <div style={chartStyles.xAxis}>
         <span>Start (Q1)</span>
         <span>Final: {finalAbility.toFixed(2)}</span>
@@ -183,27 +339,57 @@ const CorrectnessChart = ({ attempts }) => {
 
 function SummaryPage() {
   const [summary, setSummary] = useState(null);
+  const [emotionData, setEmotionData] = useState([]);
+  const [emotionStats, setEmotionStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('charts'); // 'charts' or 'detailed'
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchSummaryAndEmotions = async () => {
       try {
         const userId = localStorage.getItem("userId");
         const sessionId = localStorage.getItem("sessionId");
 
-        const res = await axios.get(
+        console.log("📊 Fetching summary and emotions for:", { userId, sessionId });
+
+        // 1. Fetch test summary
+        const summaryRes = await axios.get(
           `http://localhost:5000/api/questions/summary/${userId}/${sessionId}`
         );
-        setSummary(res.data);
+        setSummary(summaryRes.data);
+
+        // 2. ✅ FETCH EMOTION DATA FROM DATABASE
+        try {
+          const emotionRes = await axios.get(
+            `http://localhost:5000/api/emotion/session/${sessionId}`
+          );
+          
+          console.log("🎭 Emotion API response:", emotionRes.data);
+          
+          if (emotionRes.data.emotionData) {
+            setEmotionData(emotionRes.data.emotionData);
+            
+            // 3. ✅ FETCH EMOTION STATISTICS
+            const statsRes = await axios.get(
+              `http://localhost:5000/api/emotion/session/${sessionId}/stats`
+            );
+            setEmotionStats(statsRes.data.stats);
+            console.log("📈 Emotion stats:", statsRes.data.stats);
+          } else {
+            console.log("❌ No emotion data in response");
+          }
+        } catch (emotionError) {
+          console.error("❌ Emotion API error:", emotionError);
+        }
+
       } catch (err) {
-        console.error("❌ Failed to fetch summary", err);
+        console.error("❌ Failed to fetch data", err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchSummary();
+    fetchSummaryAndEmotions();
   }, []);
 
   if (isLoading) {
@@ -244,8 +430,8 @@ function SummaryPage() {
         {/* Tab Navigation */}
         <div style={styles.tabContainer}>
           <button 
-            style={activeTab === 'charts' ? styles.activeTab : styles.tab}
-            onClick={() => setActiveTab('charts')}
+            style={activeTab === 'overview' ? styles.activeTab : styles.tab}
+            onClick={() => setActiveTab('overview')}
           >
             📈 Overview
           </button>
@@ -257,82 +443,96 @@ function SummaryPage() {
           </button>
         </div>
 
-        {activeTab === 'charts' ? (
-          /* Charts View */
-          <div style={styles.chartsContainer}>
-            <div style={styles.summaryGrid}>
-              <div style={styles.summaryItem}>
-                <div style={styles.summaryIcon}>👤</div>
-                <div>
-                  <div style={styles.summaryLabel}>User ID</div>
-                  <div style={styles.summaryValue}>{summary.userId}</div>
-                </div>
-              </div>
+        {activeTab === 'overview' ? (
+          <div style={styles.overviewContainer}>
+            {/* ✅ NEW: Emotion Tracking Section */}
+            <div style={styles.emotionSection}>
+              <h2 style={styles.sectionTitle}>🎭 Emotion & Confidence Analysis</h2>
               
-              <div style={styles.summaryItem}>
-                <div style={styles.summaryIcon}>🎯</div>
-                <div>
-                  <div style={styles.summaryLabel}>Final Ability</div>
-                  <div style={styles.summaryValue}>{summary.finalAbility.toFixed(2)}</div>
-                </div>
-              </div>
-              
-              <div style={styles.summaryItem}>
-                <div style={styles.summaryIcon}>📝</div>
-                <div>
-                  <div style={styles.summaryLabel}>Questions Attempted</div>
-                  <div style={styles.summaryValue}>{summary.distinctAttempts}</div>
-                </div>
-              </div>
-
-              <div style={styles.summaryItem}>
-                <div style={styles.summaryIcon}>✅</div>
-                <div>
-                  <div style={styles.summaryLabel}>Correct Answers</div>
-                  <div style={styles.summaryValue}>{correctCount}/{totalQuestions}</div>
-                </div>
+              <div style={styles.emotionDashboard}>
+                <ConfidenceLevel emotionStats={emotionStats} />
+                <EmotionChart emotionData={emotionData} />
               </div>
             </div>
 
-            <div style={styles.chartsGrid}>
-              <CorrectnessChart attempts={summary.attempts} />
-              <AbilityChart 
-                finalAbility={summary.finalAbility} 
-                attempts={summary.attempts} 
-              />
-            </div>
-
-            <ProgressBar 
-              value={correctCount}
-              max={totalQuestions}
-              label="Correct Answers"
-              color="#48bb78"
-            />
-
-            <div style={styles.insightsSection}>
-              <h3 style={styles.insightsTitle}>📋 Key Insights</h3>
-              <div style={styles.insightsGrid}>
-                <div style={styles.insightCard}>
-                  <div style={styles.insightIcon}>⚡</div>
-                  <div style={styles.insightText}>
-                    <strong>Performance:</strong> {correctCount === totalQuestions ? 
-                      "Excellent! Perfect score!" : 
-                      `You got ${correctCount} out of ${totalQuestions} questions correct`}
+            {/* Your existing performance summary - UNCHANGED */}
+            <div style={styles.performanceSection}>
+              <h2 style={styles.sectionTitle}>📊 Performance Summary</h2>
+              
+              <div style={styles.summaryGrid}>
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryIcon}>👤</div>
+                  <div>
+                    <div style={styles.summaryLabel}>User ID</div>
+                    <div style={styles.summaryValue}>{summary.userId}</div>
                   </div>
                 </div>
-                <div style={styles.insightCard}>
-                  <div style={styles.insightIcon}>📈</div>
-                  <div style={styles.insightText}>
-                    <strong>Progress:</strong> Your ability score changed from {
-                      summary.attempts[0]?.abilityAtAttempt.toFixed(2) || 0
-                    } to {summary.finalAbility.toFixed(2)}
+                
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryIcon}>🎯</div>
+                  <div>
+                    <div style={styles.summaryLabel}>Final Ability</div>
+                    <div style={styles.summaryValue}>{summary.finalAbility.toFixed(2)}</div>
+                  </div>
+                </div>
+                
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryIcon}>📝</div>
+                  <div>
+                    <div style={styles.summaryLabel}>Questions Attempted</div>
+                    <div style={styles.summaryValue}>{summary.distinctAttempts}</div>
+                  </div>
+                </div>
+
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryIcon}>✅</div>
+                  <div>
+                    <div style={styles.summaryLabel}>Correct Answers</div>
+                    <div style={styles.summaryValue}>{correctCount}/{totalQuestions}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.chartsGrid}>
+                <CorrectnessChart attempts={summary.attempts} />
+                <AbilityChart 
+                  finalAbility={summary.finalAbility} 
+                  attempts={summary.attempts} 
+                />
+              </div>
+
+              <ProgressBar 
+                value={correctCount}
+                max={totalQuestions}
+                label="Correct Answers"
+                color="#48bb78"
+              />
+
+              <div style={styles.insightsSection}>
+                <h3 style={styles.insightsTitle}>📋 Key Insights</h3>
+                <div style={styles.insightsGrid}>
+                  <div style={styles.insightCard}>
+                    <div style={styles.insightIcon}>⚡</div>
+                    <div style={styles.insightText}>
+                      <strong>Performance:</strong> {correctCount === totalQuestions ? 
+                        "Excellent! Perfect score!" : 
+                        `You got ${correctCount} out of ${totalQuestions} questions correct`}
+                    </div>
+                  </div>
+                  <div style={styles.insightCard}>
+                    <div style={styles.insightIcon}>📈</div>
+                    <div style={styles.insightText}>
+                      <strong>Progress:</strong> Your ability score changed from {
+                        summary.attempts[0]?.abilityAtAttempt.toFixed(2) || 0
+                      } to {summary.finalAbility.toFixed(2)}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          /* Detailed View */
+          /* Detailed View - UNCHANGED */
           <div style={styles.attemptsSection}>
             <h2 style={styles.attemptsTitle}>Detailed Attempts</h2>
             <div style={styles.attemptsList}>
@@ -385,8 +585,34 @@ function SummaryPage() {
   );
 }
 
-// Updated chart styles - much simpler and cleaner
+// Chart Styles
 const chartStyles = {
+  progressContainer: {
+    marginBottom: 20
+  },
+  progressLabel: {
+    fontSize: "0.9rem",
+    color: "#718096",
+    marginBottom: 8,
+    fontWeight: "600"
+  },
+  progressBar: {
+    width: "100%",
+    height: 12,
+    background: "#e2e8f0",
+    borderRadius: 6,
+    overflow: "hidden"
+  },
+  progressFill: {
+    height: "100%",
+    transition: "width 0.3s ease"
+  },
+  progressValue: {
+    fontSize: "0.8rem",
+    color: "#718096",
+    marginTop: 4,
+    textAlign: "right"
+  },
   chartContainer: {
     background: 'white',
     padding: '20px',
@@ -405,6 +631,54 @@ const chartStyles = {
     color: '#718096',
     textAlign: 'center',
     marginBottom: '20px'
+  },
+  noDataText: {
+    textAlign: 'center',
+    color: '#718096',
+    fontStyle: 'italic'
+  },
+  emotionBars: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  emotionBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px'
+  },
+  emotionLabel: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    width: '120px',
+    fontSize: '0.9rem'
+  },
+  emotionName: {
+    fontWeight: '600',
+    color: '#2d3748',
+    textTransform: 'capitalize'
+  },
+  emotionCount: {
+    color: '#718096'
+  },
+  barContainer: {
+    flex: 1,
+    height: '20px',
+    background: '#f1f5f9',
+    borderRadius: '10px',
+    overflow: 'hidden'
+  },
+  barFill: {
+    height: '100%',
+    transition: 'width 0.3s ease',
+    borderRadius: '10px'
+  },
+  percentage: {
+    width: '50px',
+    textAlign: 'right',
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    color: '#2d3748'
   },
   chartWrapper: {
     display: 'flex',
@@ -501,13 +775,117 @@ const chartStyles = {
     border: '2px dashed #667eea',
     background: 'white',
     zIndex: 2
+  },
+  pieChartContainer: {
+    background: 'white',
+    padding: '20px',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    textAlign: 'center'
+  },
+  pieChart: {
+    position: 'relative',
+    width: '150px',
+    height: '150px',
+    borderRadius: '50%',
+    margin: '0 auto 20px',
+    background: '#e2e8f0'
+  },
+  pieSegment: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    transition: 'all 0.3s ease'
+  },
+  pieCenter: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '60px',
+    height: '60px',
+    background: 'white',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  },
+  piePercentage: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: '#2d3748'
+  },
+  legendColor: {
+    width: '12px',
+    height: '12px',
+    borderRadius: '2px'
   }
-
 };
 
-// Rest of the styles remain the same as previous version, with some additions:
+// Confidence Level Styles
+const confidenceStyles = {
+  container: {
+    background: 'white',
+    padding: '20px',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0'
+  },
+  title: {
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    color: '#2d3748',
+    marginBottom: '15px',
+    textAlign: 'center'
+  },
+  confidenceBadge: {
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '25px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: '20px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+  },
+  stats: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginBottom: '20px'
+  },
+  statItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #f1f5f9'
+  },
+  statLabel: {
+    fontWeight: '600',
+    color: '#4a5568',
+    fontSize: '0.9rem'
+  },
+  statValue: {
+    color: '#2d3748',
+    fontSize: '0.9rem',
+    textTransform: 'capitalize'
+  },
+  feedback: {
+    background: '#f7fafc',
+    padding: '15px',
+    borderRadius: '8px',
+    borderLeft: '4px solid #4299e1'
+  },
+  noData: {
+    textAlign: 'center',
+    color: '#718096',
+    fontStyle: 'italic'
+  }
+};
+
+// Main Styles
 const styles = {
-  // ... (all previous styles remain the same)
   container: {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -522,7 +900,7 @@ const styles = {
     borderRadius: 20,
     padding: 40,
     boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
-    maxWidth: 900,
+    maxWidth: 1200,
     width: "100%",
     maxHeight: "90vh",
     overflowY: "auto"
@@ -577,30 +955,50 @@ const styles = {
     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
     transition: "all 0.3s ease"
   },
-  chartsContainer: {
+  overviewContainer: {
     display: "flex",
     flexDirection: "column",
-    gap: 20
+    gap: 30
   },
-  chartsGrid: {
+  emotionSection: {
+    background: "#f8fafc",
+    padding: 25,
+    borderRadius: 15,
+    border: "1px solid #e2e8f0"
+  },
+  sectionTitle: {
+    fontSize: "1.5rem",
+    fontWeight: "600",
+    color: "#2d3748",
+    marginBottom: 20,
+    display: "flex",
+    alignItems: "center",
+    gap: 10
+  },
+  emotionDashboard: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: 20,
-    marginBottom: 20
+    gridTemplateColumns: "1fr 1fr",
+    gap: 25
+  },
+  performanceSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 25
   },
   summaryGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
     gap: 20,
-    marginBottom: 30,
-    padding: 20,
-    background: "#f7fafc",
-    borderRadius: 12
+    marginBottom: 30
   },
   summaryItem: {
     display: "flex",
     alignItems: "center",
-    gap: 12
+    gap: 15,
+    background: "#f7fafc",
+    padding: 20,
+    borderRadius: 12,
+    border: "1px solid #e2e8f0"
   },
   summaryIcon: {
     fontSize: "2rem"
@@ -614,6 +1012,12 @@ const styles = {
     fontSize: "1.3rem",
     fontWeight: "700",
     color: "#2d3748"
+  },
+  chartsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: 25,
+    marginBottom: 20
   },
   insightsSection: {
     background: "#f0fff4",
@@ -643,7 +1047,6 @@ const styles = {
     color: "#2d3748",
     lineHeight: 1.4
   },
-  // ... (rest of the previous styles remain unchanged)
   attemptsSection: {
     marginTop: 20
   },
@@ -784,5 +1187,18 @@ const styles = {
     fontSize: "1rem"
   }
 };
+
+// Add CSS animations
+const styleSheet = document.styleSheets[0];
+const addStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+if (styleSheet) {
+  styleSheet.insertRule(addStyles, styleSheet.cssRules.length);
+}
 
 export default SummaryPage;
