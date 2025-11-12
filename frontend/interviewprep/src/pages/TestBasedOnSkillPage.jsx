@@ -14,11 +14,19 @@ function TestBasedOnSkillPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Load stored userId
+  // ADDED: Authentication check - Replace the existing useEffect
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
-    if (storedUserId) setUserId(storedUserId);
-  }, []);
+    const storedUserName = localStorage.getItem("userName");
+    
+    if (!storedUserId) {
+      // Redirect to login if not authenticated
+      navigate("/login");
+      return;
+    }
+    
+    setUserId(storedUserId);
+  }, [navigate]);
 
   const handleResumeUpload = async () => {
     if (!userId || !resume) {
@@ -109,13 +117,10 @@ function TestBasedOnSkillPage() {
         <h1 style={styles.title}>🧾 Take Test Based on Skill</h1>
 
         <div style={styles.form}>
-          <label style={styles.label}>User ID</label>
-          <input
-            type="number"
-            style={styles.input}
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-          />
+          {/* ADDED: User info display - REMOVED manual User ID input */}
+          <div style={styles.userInfo}>
+            <strong>Logged in as User ID:</strong> {userId}
+          </div>
 
           {/* Resume selection */}
           <label style={styles.label}>Select or Upload Resume</label>
@@ -216,6 +221,16 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 16,
+  },
+  // ADDED: User info style
+  userInfo: {
+    background: "#f7fafc",
+    padding: "12px 16px",
+    borderRadius: 8,
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#4a5568",
+    border: "1px solid #e2e8f0"
   },
   label: {
     fontWeight: 600,

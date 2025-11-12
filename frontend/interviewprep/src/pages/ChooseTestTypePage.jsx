@@ -8,7 +8,7 @@ function ChooseTestTypePage() {
     <div style={styles.container}>
       <div style={styles.cardContainer}>
         <div
-          style={{ ...styles.card, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+          style={{ ...styles.card, background: "linear-gradient(135deg, #0cdcb3ff 0%, #764ba2 100%)" }}
           onClick={() => navigate("/test-skill")}
           onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
           onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
@@ -16,7 +16,7 @@ function ChooseTestTypePage() {
           <h2 style={styles.title}>🧠 Take Test Based on Skill</h2>
           <p style={styles.text}>Upload your resume and let the system extract your top skills.</p>
         </div>
-
+{/* 
         <div
           style={{ ...styles.card, background: "linear-gradient(135deg, #43cea2 0%, #185a9d 100%)" }}
           onClick={() => navigate("/test-role")}
@@ -25,7 +25,7 @@ function ChooseTestTypePage() {
         >
           <h2 style={styles.title}>💼 Take Test Based on Role</h2>
           <p style={styles.text}>Choose your role and start a tailored assessment.</p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
