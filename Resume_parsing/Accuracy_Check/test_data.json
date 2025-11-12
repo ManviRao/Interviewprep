@@ -1,0 +1,37 @@
+[
+  {
+    "userId": 1,
+    "resume_file": "Manvitha_Rao_resume.pdf",
+    "expected_skills": ["C", "Java", "HTML", "CSS", "ReactJS", "SQL", "Spring Boot", "Python", "Flask"]
+  },
+  {
+    "userId": 2,
+    "resume_file": "resume53.pdf",
+    "expected_skills": ["C", "Java", "HTML", "CSS", "ReactJS", "NodeJS", "ExpressJS", "MongoDB", "AI Fundamentals"]
+  },
+  {
+    "userId": 3,
+    "resume_file": "DishanthShetty.pdf",
+    "expected_skills": ["C++", "Java", "Python", "JavaScript", "NodeJS", "ExpressJS", "ReactJS", "MongoDB", "Django"]
+  },
+  {
+    "userId": 4,
+    "resume_file": "Resume_M_Akshay_Prabhu.pdf",
+    "expected_skills": ["C++", "Python", "Java", "JavaScript", "HTML", "CSS", "NodeJS", "ExpressJS", "ReactJS", "MySQL", "AWS"]
+  },
+  {
+    "userId": 5,
+    "resume_file": "713dfd21-20a9-424d-ad50-b898c1634679.docx",
+    "expected_skills": ["Java", "C", "MongoDB", "Firebase", "ReactJS", "HTML", "CSS", "FlutterFlow", "Git", "VS Code", "Node.js", "Express.js", "Stripe"]
+  },
+  {
+    "userId": 6,
+    "resume_file": "Karuna_Nayak_4CB22CS056_Resume.pdf",
+    "expected_skills": ["Java", "C", "Node.js", "Express.js", "HTML", "CSS", "React.js", "Postman", "VS Code", "Linux", "GitHub", "Python", "AI", "Cohere API", "YOLOv8", "MiDaS", "RTAB-Map", "AWS", "Oracle Cloud", "Generative AI"]
+  },
+  {
+    "userId": 7,
+    "resume_file": "KEERTHANA K_4CB22CS058.pdf",
+    "expected_skills": ["Python", "Java", "SQL", "Data Structures", "MongoDB", "HTML", "CSS", "VS Code", "ReactJS", "NodeJS", "Cybersecurity"]
+  }
+]

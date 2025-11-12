@@ -6,24 +6,100 @@ function QuestionPage() {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
   const [remainingQuestions, setRemainingQuestions] = useState(0); 
-   const [submitting, setSubmitting] = useState(false);
-
+  const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("idle");
   const [listening, setListening] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [emotionData, setEmotionData] = useState([]);
 
   const navigate = useNavigate();
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef("");
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const emotionIntervalRef = useRef(null);
 
   // Load question + remaining count from localStorage when component mounts
   useEffect(() => {
     const storedQuestion = localStorage.getItem("currentQuestion");
     const storedRemaining = localStorage.getItem("remainingQuestions");
 
-
     if (storedQuestion) setCurrentQuestion(JSON.parse(storedQuestion));
     if (storedRemaining) setRemainingQuestions(parseInt(storedRemaining, 10));
+    
+    // Start camera when question loads
+    startCamera();
+    
+    return () => {
+      stopCamera();
+    };
   }, []);
+
+  // Start camera for emotion detection
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480 } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setCameraActive(true);
+        
+        // Start emotion detection every 5 seconds
+        emotionIntervalRef.current = setInterval(captureEmotion, 5000);
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+    }
+  };
+
+  // Stop camera
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+    if (emotionIntervalRef.current) {
+      clearInterval(emotionIntervalRef.current);
+    }
+    setCameraActive(false);
+  };
+
+  // Capture frame and send for emotion analysis
+  const captureEmotion = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    // Draw current video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert to base64 for sending to backend
+    const imageData = canvas.toDataURL('image/jpeg');
+    
+    try {
+      const userId = localStorage.getItem("userId");
+      const sessionId = localStorage.getItem("sessionId");
+      
+      const response = await axios.post("http://localhost:5000/api/emotion/analyze-frame", {
+        imageData,
+        userId,
+        sessionId,
+        questionId: currentQuestion?.id
+      });
+      
+      if (response.data.emotion) {
+        setEmotionData(prev => [...prev, {
+          timestamp: new Date().toISOString(),
+          emotion: response.data.emotion,
+          questionId: currentQuestion?.id
+        }]);
+      }
+    } catch (err) {
+      console.error("Error in emotion detection:", err);
+    }
+  };
 
   // Initialize SpeechRecognition
   const initRecognition = () => {
@@ -38,7 +114,7 @@ function QuestionPage() {
     recog.continuous = true;
     recog.interimResults = true;
     recog.maxAlternatives = 1;
-    recog.lang = "en-US"; // default, can change if needed
+    recog.lang = "en-US";
 
     recog.onstart = () => {
       setStatus("listening…");
@@ -65,14 +141,14 @@ function QuestionPage() {
         }
       }
       const combined = finalTranscriptRef.current + interim;
-      setAnswer(combined); // updates textarea with speech text
+      setAnswer(combined);
     };
 
     return recog;
   };
 
   const handleStartListening = () => {
-    if (recognitionRef.current) recognitionRef.current.stop(); // reset
+    if (recognitionRef.current) recognitionRef.current.stop();
     recognitionRef.current = initRecognition();
     if (recognitionRef.current) {
       try {
@@ -87,54 +163,52 @@ function QuestionPage() {
     if (recognitionRef.current) recognitionRef.current.stop();
   };
 
-  // Handle Submit Answer
+  // Handle Submit Answer - UPDATED WITH CAMERA STOP
   const handleSubmit = async () => {
-      if (!answer.trim()) {
-    alert("⚠️ Please enter an answer before submitting.");
-    return; // Stop execution if answer is blank
-  }
-  if (submitting) return;
-  
-  setSubmitting(true);
+    if (!answer.trim()) {
+      alert("⚠️ Please enter an answer before submitting.");
+      return;
+    }
+    if (submitting) return;
+    
+    setSubmitting(true);
     try {
       const userId = localStorage.getItem("userId");
       const skill = localStorage.getItem("skill");
       const sessionId = localStorage.getItem("sessionId");
 
-
-      // Send answer to backend and get next question or finish test
+      // Send answer with emotion data to backend
       const res = await axios.post("http://localhost:5000/api/questions/answer", {
         userId,
         sessionId,
         questionId: currentQuestion.id,
         candidateAnswer: answer,
         skill,
-        timeTakenSeconds: 30, // Fixed time for simplicity
+        timeTakenSeconds: 30,
+        emotionData: emotionData // Send collected emotion data
       });
-      console.log("✅ Answer submitted:", res.data.nextQuestion);
 
+      // Store emotion data in localStorage for summary page
+      localStorage.setItem("emotionData", JSON.stringify(emotionData));
 
       if (res.data.nextQuestion) {
         setCurrentQuestion(res.data.nextQuestion);
-        localStorage.setItem(
-          "currentQuestion",
-          JSON.stringify(res.data.nextQuestion)
-        );
+        localStorage.setItem("currentQuestion", JSON.stringify(res.data.nextQuestion));
         setRemainingQuestions(res.data.remainingQuestions);
-        localStorage.setItem(
-          "remainingQuestions",
-          res.data.remainingQuestions
-        );
+        localStorage.setItem("remainingQuestions", res.data.remainingQuestions);
         setAnswer("");
-        finalTranscriptRef.current = ""; // reset speech transcript
+        setEmotionData([]); // Reset emotion data for next question
+        finalTranscriptRef.current = "";
       } else {
+        // 🆕 STOP CAMERA BEFORE NAVIGATING TO SUMMARY
+        stopCamera();
         navigate("/summary");
       }
     } catch (err) {
       console.error("❌ Failed to submit answer", err);
       alert("Failed to submit answer. Check backend.");
-    }finally{
-       setSubmitting(false); 
+    } finally {
+      setSubmitting(false); 
     }
   };
 
@@ -154,6 +228,32 @@ function QuestionPage() {
           <div style={styles.icon}>❓</div>
           <h1 style={styles.title}>Question</h1>
           <p style={styles.subtitle}>Test your knowledge and skills</p>
+        </div>
+
+        {/* Camera Section */}
+        <div style={styles.cameraSection}>
+          <div style={styles.cameraContainer}>
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              style={styles.video}
+            />
+            <canvas 
+              ref={canvasRef} 
+              width="640" 
+              height="480" 
+              style={{ display: 'none' }}
+            />
+            <div style={styles.cameraStatus}>
+              {cameraActive ? "📹 Camera Active" : "📹 Camera Off"}
+            </div>
+          </div>
+          <div style={styles.emotionData}>
+            <h4>Emotion Tracking:</h4>
+            <p>Detected emotions: {emotionData.length} samples</p>
+          </div>
         </div>
 
         <div style={styles.questionSection}>
@@ -195,15 +295,14 @@ function QuestionPage() {
           </div>
         </div>
 
-        
         <button 
           style={{
-    ...styles.button,
-    opacity: submitting ? 0.6 : 1,
-    cursor: submitting ? "not-allowed" : "pointer",
-  }} 
+            ...styles.button,
+            opacity: submitting ? 0.6 : 1,
+            cursor: submitting ? "not-allowed" : "pointer",
+          }} 
           onClick={handleSubmit}
-            disabled={submitting}
+          disabled={submitting}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.3)';
@@ -211,12 +310,6 @@ function QuestionPage() {
           onMouseLeave={(e) => {
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
-          }}
-          onMouseDown={(e) => {
-            e.target.style.transform = 'translateY(0)';
-          }}
-          onMouseUp={(e) => {
-            e.target.style.transform = 'translateY(-2px)';
           }}
         >
           {submitting ? "Submitting..." : "Submit Answer"}
@@ -262,6 +355,38 @@ const styles = {
     lineHeight: 1.2,
   },
   subtitle: { fontSize: "1.1rem", color: "#718096", margin: 0 },
+  
+  // CAMERA SECTION STYLES
+  cameraSection: {
+    display: 'flex',
+    gap: '20px',
+    marginBottom: '24px',
+    alignItems: 'flex-start'
+  },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative'
+  },
+  video: {
+    width: '100%',
+    maxWidth: '300px',
+    borderRadius: '12px',
+    border: '2px solid #e2e8f0'
+  },
+  cameraStatus: {
+    marginTop: '8px',
+    fontSize: '0.9rem',
+    color: '#4a5568'
+  },
+  emotionData: {
+    flex: 1,
+    background: '#f7fafc',
+    padding: '16px',
+    borderRadius: '12px',
+    textAlign: 'left'
+  },
+  // END CAMERA STYLES
+
   questionSection: {
     textAlign: "left",
     marginBottom: 24,
@@ -363,6 +488,7 @@ const addStyles = `
     100% { transform: rotate(360deg); }
   }
 `;
+
 if (styleSheet) {
   styleSheet.insertRule(addStyles, styleSheet.cssRules.length);
 }
