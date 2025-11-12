@@ -224,7 +224,7 @@ const AbilityChart = ({ finalAbility, attempts }) => {
           ))}
           
           {/* Final ability point */}
-          <div 
+          {/* <div 
             style={{
               ...chartStyles.finalPoint,
               left: '100%',
@@ -233,7 +233,7 @@ const AbilityChart = ({ finalAbility, attempts }) => {
             title={`Final: ${finalAbility.toFixed(2)}`}
           >
             Final
-          </div>
+          </div> */}
           
           {/* Connection lines */}
           <svg style={chartStyles.linesSvg} width="100%" height="100%">
@@ -292,10 +292,10 @@ const AbilityChart = ({ finalAbility, attempts }) => {
           <div style={{...chartStyles.legendDot, background: '#f56565'}}></div>
           <span>Incorrect Answer</span>
         </div>
-        <div style={chartStyles.legendItem}>
+        {/* <div style={chartStyles.legendItem}>
           <div style={{...chartStyles.legendDot, background: '#667eea', border: '2px dashed #667eea'}}></div>
           <span>Final Ability</span>
-        </div>
+        </div> */}
       </div>
     </div>
   );
