@@ -47,6 +47,11 @@ const skill = skillRow?.topic || "General";
     await storeEmotionData(conn, userId, questionId, emotionData);
   }
 
+  // Store emotion data if available
+  if (emotionData && emotionData.length > 0) {
+    await storeEmotionData(conn, userId, questionId, emotionData);
+  }
+
   await conn.end();
   return theta;
 }
