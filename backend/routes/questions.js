@@ -88,7 +88,6 @@ router.post("/answer", async (req, res) => {
     const isCorrect = evaluation.correctness?.toLowerCase() === "yes";
 
 
-
     // 6. Count distinct questions attempted in this session
     const [[countRow]] = await conn.execute(
       "SELECT COUNT(*) AS cnt FROM user_attempts WHERE session_id = ? and user_id = ?",
