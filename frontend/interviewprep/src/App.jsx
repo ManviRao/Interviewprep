@@ -8,7 +8,9 @@ import TestBasedOnSkillPage from "./pages/TestBasedOnSkillPage";
 import AdminPage from "./pages/ScraperButton";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
-import LogoutButton from "./pages/LogoutButton"; // Add this import
+import LogoutButton from "./pages/LogoutButton";
+import VerifyEmailPage from "./pages/VerifyEmailPage"; // Add this import
+import ResendVerificationPage from "./pages/ResendVerificationPage"; // Add this import
 
 // Simple route protection
 const ProtectedRoute = ({ children }) => {
@@ -23,8 +25,13 @@ function App() {
       <LogoutButton />
       
       <Routes>
+        {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/resend-verification" element={<ResendVerificationPage />} />
+        
+        {/* Protected routes */}
         <Route path="/start" element={
           <ProtectedRoute>
             <StartTestPage />

@@ -44,7 +44,7 @@ app.use("/api/questions", questionsRoutes);
 app.use("/api/evaluate", evaluateRoute);
 app.use("/api/run-scraper", scraperRoutes);
 app.use("/api/run-scraper", scraperRoutes); //for scrape button page
-app.use("/api/emotion", emotionRoutes); // New emotion routes
+//app.use("/api/emotion", emotionRoutes); // New emotion routes
 
 // ✅ CRON JOB SECTION
 const scraperCron = process.env.SCRAPER_CRON || "*/1 * * * *"; // Default daily every minute
