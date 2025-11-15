@@ -9,12 +9,28 @@ import AdminPage from "./pages/ScraperButton";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import LogoutButton from "./pages/LogoutButton"; // Add this import
+import Home from "./pages/Home";
 
 // Simple route protection
 const ProtectedRoute = ({ children }) => {
   const userId = localStorage.getItem("userId");
   return userId ? children : <Navigate to="/login" />;
 };
+function SkillTest() {
+  return (
+    <div className="flex justify-center items-center h-[80vh] text-2xl font-semibold">
+      Skill Test Page (Coming Soon)
+    </div>
+  );
+}
+
+function Report() {
+  return (
+    <div className="flex justify-center items-center h-[80vh] text-2xl font-semibold">
+      Report Page (Coming Soon)
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -30,11 +46,11 @@ function App() {
             <StartTestPage />
           </ProtectedRoute>
         } />
-        <Route path="/" element={
+        {/* <Route path="/" element={
           <ProtectedRoute>
             <ChooseTestTypePage />
           </ProtectedRoute>
-        } />
+        } /> */}
         <Route path="/test-skill" element={
           <ProtectedRoute>
             <TestBasedOnSkillPage />
@@ -51,6 +67,9 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/" element={<Home />} />
+          <Route path="/skill-test" element={<SkillTest />} />
+        <Route path="/report" element={<Report />} />
       </Routes>
     </Router>
   );
