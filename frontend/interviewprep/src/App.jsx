@@ -13,6 +13,9 @@ import VerifyEmailPage from "./pages/VerifyEmailPage"; // Add this import
 import ResendVerificationPage from "./pages/ResendVerificationPage"; // Add this import
 import Home from "./pages/Home";
 
+import HistoryPage from "./pages/HistoryPage";
+import FeedbackTable from "./pages/FeedbackTable";
+
 // Simple route protection
 const ProtectedRoute = ({ children }) => {
   const userId = localStorage.getItem("userId");
@@ -46,7 +49,11 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
-        
+
+        <Route path="/session/:sessionId" element={<SummaryPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+                <Route path="/feedback" element={<FeedbackTable />} />
+
         {/* Protected routes */}
         <Route path="/start" element={
           <ProtectedRoute>
