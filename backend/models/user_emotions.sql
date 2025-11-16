@@ -1,3 +1,4 @@
+-- Create the user_emotions table
 CREATE TABLE user_emotions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT,

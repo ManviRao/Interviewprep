@@ -5,10 +5,17 @@ async function updateUserAbility(userId, questionId, isCorrect, emotionData = []
   const conn = await mysql.createConnection(DB_CONFIG);
 
   const [[userRow]] = await conn.execute(
-    "SELECT ability FROM users WHERE id = ?",
-    [userId]
-  );
+  "SELECT final_ability FROM user_skills WHERE user_id = ? AND skill = (SELECT topic FROM questions WHERE id = ?)",
+  [userId, questionId]
+);
+
   let theta = userRow?.ability ?? 0;
+
+ const [[skillRow]] = await conn.execute(
+  "SELECT topic FROM questions WHERE id = ?",
+  [questionId]
+);
+const skill = skillRow?.topic || "General";
 
   const [[qRow]] = await conn.execute(
     "SELECT difficulty, discrimination FROM questions WHERE id = ?",
@@ -25,10 +32,20 @@ async function updateUserAbility(userId, questionId, isCorrect, emotionData = []
   const lr = 0.1;
   theta = theta + lr * ((isCorrect ? 1 : 0) - p) * emotionFactor;
 
-  await conn.execute(
-    "UPDATE users SET ability = ? WHERE id = ?",
-    [theta, userId]
-  );
+  await conn.execute(`
+  INSERT INTO user_skills (user_id, skill, final_ability, test_count, last_tested)
+  VALUES (?, ?, ?, 1, NOW())
+  ON DUPLICATE KEY UPDATE
+    final_ability = VALUES(final_ability),
+    test_count = test_count + 1,
+    last_tested = NOW()
+`, [userId, skill, theta]);
+
+
+  // Store emotion data if available
+  if (emotionData && emotionData.length > 0) {
+    await storeEmotionData(conn, userId, questionId, emotionData);
+  }
 
   // Store emotion data if available
   if (emotionData && emotionData.length > 0) {
@@ -91,10 +108,10 @@ async function getNextQuestion(userId, skill, session_id) {
 
   // get user ability
   const [[userRow]] = await conn.execute(
-    "SELECT ability FROM users WHERE id = ?",
-    [userId]
-  );
-  const theta = userRow?.ability ?? 0;
+  "SELECT final_ability FROM user_skills WHERE user_id = ? AND skill = ?",
+  [userId, skill]
+);
+const theta = userRow?.final_ability ?? 0;
 
   // fetch next question by topic (C, Java, SQL, Python)
   const[rows]=await conn.execute(`SELECT q.id, q.question_text, q.topic, q.tags, q.difficulty,

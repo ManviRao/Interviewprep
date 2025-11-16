@@ -7,7 +7,7 @@ const LogoutButton = () => {
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
       // Clear all authentication data
-      localStorage.clear();
+      //localStorage.clear();
       // Redirect to login page
       navigate('/login');
       console.log('User logged out successfully');
