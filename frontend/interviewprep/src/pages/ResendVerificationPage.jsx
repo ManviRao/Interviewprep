@@ -1,45 +1,27 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-function LoginPage() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+function ResendVerificationPage() {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    setMessage("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email: formData.email,
-        password: formData.password
+      const res = await axios.post("http://localhost:5000/api/auth/resend-verification", {
+        email: email
       });
 
-      // Save user data to localStorage
-      localStorage.setItem("userId", res.data.user.id);
-      localStorage.setItem("userName", res.data.user.name);
-      localStorage.setItem("token", res.data.token);
-
-      navigate("/");
+      setMessage(res.data.message);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
-      
-      // If the error is about unverified email, show resend option
-      if (err.response?.status === 403 && err.response?.data?.message?.includes("verify")) {
-        setError(
-          <span>
-            {errorMessage}{" "}
-            <Link to="/resend-verification" style={{color: "#667eea", fontWeight: "600"}}>
-              Resend verification email
-            </Link>
-          </span>
-        );
-      } else {
-        setError(errorMessage);
-      }
+      setError(err.response?.data?.message || "Failed to resend verification email");
     } finally {
       setLoading(false);
     }
@@ -49,9 +31,9 @@ function LoginPage() {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <div style={styles.icon}>🔐</div>
-          <h1 style={styles.title}>Welcome Back</h1>
-          <p style={styles.subtitle}>Sign in to your account</p>
+          <div style={styles.icon}>📧</div>
+          <h1 style={styles.title}>Resend Verification Email</h1>
+          <p style={styles.subtitle}>Enter your email to receive a new verification link</p>
         </div>
 
         <form style={styles.form} onSubmit={handleSubmit}>
@@ -60,22 +42,10 @@ function LoginPage() {
             <input
               style={styles.input}
               type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="Enter your email"
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              style={styles.input}
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              required
-              placeholder="Enter your password"
             />
           </div>
 
@@ -86,16 +56,23 @@ function LoginPage() {
             </div>
           )}
 
+          {message && (
+            <div style={styles.successMessage}>
+              <div style={styles.successIcon}>✅</div>
+              {message}
+            </div>
+          )}
+
           <button 
             style={loading ? {...styles.button, ...styles.buttonLoading} : styles.button}
             type="submit"
             disabled={loading}
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {loading ? "Sending..." : "Resend Verification Email"}
           </button>
 
-          <div style={styles.signupLink}>
-            Don't have an account? <Link to="/signup" style={styles.link}>Sign up here</Link>
+          <div style={styles.links}>
+            <Link to="/login" style={styles.link}>Back to Login</Link>
           </div>
         </form>
       </div>
@@ -122,18 +99,30 @@ const styles = {
     width: "100%",
     textAlign: "center"
   },
-  header: { marginBottom: 32 },
-  icon: { fontSize: "4rem", marginBottom: 16 },
+  header: {
+    marginBottom: 32
+  },
+  icon: {
+    fontSize: "4rem",
+    marginBottom: 16
+  },
   title: {
-    fontSize: "2.2rem",
+    fontSize: "2rem",
     fontWeight: "700",
     color: "#2d3748",
-    margin: "0 0 8px 0",
-    lineHeight: 1.2
+    margin: "0 0 8px 0"
   },
-  subtitle: { fontSize: "1.1rem", color: "#718096", margin: 0 },
-  form: { textAlign: "left" },
-  inputGroup: { marginBottom: 20 },
+  subtitle: {
+    fontSize: "1rem",
+    color: "#718096",
+    margin: 0
+  },
+  form: {
+    textAlign: "left"
+  },
+  inputGroup: {
+    marginBottom: 20
+  },
   label: {
     display: "block",
     marginBottom: 8,
@@ -165,7 +154,10 @@ const styles = {
     marginTop: 8,
     marginBottom: 20
   },
-  buttonLoading: { opacity: 0.7, cursor: "not-allowed" },
+  buttonLoading: {
+    opacity: 0.7,
+    cursor: "not-allowed"
+  },
   errorMessage: {
     background: "#fed7d7",
     border: "1px solid #feb2b2",
@@ -177,9 +169,31 @@ const styles = {
     marginBottom: 20,
     color: "#c53030"
   },
-  errorIcon: { fontSize: "1rem" },
-  signupLink: { textAlign: "center", color: "#718096" },
-  link: { color: "#667eea", textDecoration: "none", fontWeight: "600" }
+  successMessage: {
+    background: "#c6f6d5",
+    border: "1px solid #9ae6b4",
+    borderRadius: 10,
+    padding: "12px 16px",
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+    color: "#276749"
+  },
+  errorIcon: {
+    fontSize: "1rem"
+  },
+  successIcon: {
+    fontSize: "1rem"
+  },
+  links: {
+    textAlign: "center"
+  },
+  link: {
+    color: "#667eea",
+    textDecoration: "none",
+    fontWeight: "600"
+  }
 };
 
-export default LoginPage;
+export default ResendVerificationPage;

@@ -8,6 +8,7 @@ function SignupPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false); // Add success state
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -26,17 +27,52 @@ function SignupPage() {
         password: formData.password
       });
 
-      localStorage.setItem("userId", res.data.user.id);
-      localStorage.setItem("userName", res.data.user.name);
-      localStorage.setItem("token", res.data.token);
+      // REMOVE THESE LINES - Don't auto-login
+      // localStorage.setItem("userId", res.data.user.id);
+      // localStorage.setItem("userName", res.data.user.name);
+      // localStorage.setItem("token", res.data.token);
 
-      navigate("/");
+      // Show success message instead of navigating
+      setSuccess(true);
+      
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Show success message after signup
+  if (success) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div style={styles.icon}>✅</div>
+            <h1 style={styles.title}>Check Your Email!</h1>
+            <p style={styles.subtitle}>We've sent a verification link to your email</p>
+          </div>
+
+          <div style={styles.successContent}>
+            <p style={styles.successMessage}>
+              Please check your inbox and click the verification link to activate your account.
+            </p>
+            <div style={styles.successActions}>
+              <button 
+                style={styles.button}
+                onClick={() => navigate("/login")}
+              >
+                Go to Login
+              </button>
+              <Link to="/resend-verification" style={styles.link}>
+                Didn't receive email? Resend verification
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -120,7 +156,7 @@ function SignupPage() {
   );
 }
 
-// Reuse the same styles from LoginPage
+// Add these new styles for the success state
 const styles = {
   container: {
     minHeight: "100vh",
@@ -197,7 +233,23 @@ const styles = {
   },
   errorIcon: { fontSize: "1rem" },
   loginLink: { textAlign: "center", color: "#718096" },
-  link: { color: "#667eea", textDecoration: "none", fontWeight: "600" }
+  link: { color: "#667eea", textDecoration: "none", fontWeight: "600" },
+  
+  // New styles for success state
+  successContent: {
+    textAlign: "center"
+  },
+  successMessage: {
+    fontSize: "1.1rem",
+    color: "#4a5568",
+    lineHeight: 1.6,
+    marginBottom: 30
+  },
+  successActions: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 15
+  }
 };
 
 export default SignupPage;
