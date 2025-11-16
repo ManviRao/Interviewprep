@@ -52,7 +52,7 @@ function App() {
 
         <Route path="/session/:sessionId" element={<SummaryPage />} />
         <Route path="/history" element={<HistoryPage />} />
-                <Route path="/feedback" element={<FeedbackTable />} />
+                <Route path="/admin/feedback" element={<FeedbackTable />} />
 
         {/* Protected routes */}
         <Route path="/start" element={
