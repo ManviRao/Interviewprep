@@ -9,3 +9,9 @@ ALTER TABLE users
 ADD COLUMN email VARCHAR(255) UNIQUE,
 ADD COLUMN password_hash VARCHAR(255),
 ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+
+ALTER TABLE users
+ADD COLUMN is_verified TINYINT(1) DEFAULT 0 AFTER updated_at,
+ADD COLUMN verification_token VARCHAR(255) NULL AFTER is_verified,
+ADD COLUMN verification_token_expires DATETIME NULL AFTER verification_token;

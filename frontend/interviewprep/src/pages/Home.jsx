@@ -3,11 +3,13 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
+import { useNavigate } from "react-router-dom";
 import { Player } from "@lottiefiles/react-lottie-player";
 import Navbar from "@/components/Navbar";
 
 export default function HomePage() {
+  const navigate = useNavigate();
+
   return (
     <>
      
@@ -83,7 +85,7 @@ export default function HomePage() {
       AI asks real interview-style questions based on your role.
     </p>
 
- <Button
+ <Button   onClick={() => navigate("/test-skill")}
   className="
     mt-6 
     bg-purple-600 
