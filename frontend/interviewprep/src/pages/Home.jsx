@@ -126,7 +126,7 @@ export default function HomePage() {
           <p className="max-w-3xl mx-auto text-gray-700 mb-12">
             Deep insights into correctness, clarity, confidence, and improvement areas.
           </p>
-          <Button className="bg-purple-600 hover:bg-purple-700 text-lg px-6 py-3 rounded-xl text-white">
+          <Button onClick={() => navigate("/history")} className="bg-purple-600 hover:bg-purple-700 text-lg px-6 py-3 rounded-xl text-white">
             View Report
           </Button>
         </div>

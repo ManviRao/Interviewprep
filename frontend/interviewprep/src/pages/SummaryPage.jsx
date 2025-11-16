@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
+
+
 
 // Emotion color mapping
 const getEmotionColor = (emotion) => {
@@ -343,25 +346,27 @@ function SummaryPage() {
   const [emotionStats, setEmotionStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const { sessionId } = useParams() || {};
+const idToFetch = sessionId || localStorage.getItem("sessionId");
 
   useEffect(() => {
     const fetchSummaryAndEmotions = async () => {
       try {
         const userId = localStorage.getItem("userId");
-        const sessionId = localStorage.getItem("sessionId");
+       // const sessionId = localStorage.getItem("sessionId");
 
-        console.log("📊 Fetching summary and emotions for:", { userId, sessionId });
+        console.log("📊 Fetching summary and emotions for:", { userId, idToFetch });
 
         // 1. Fetch test summary
         const summaryRes = await axios.get(
-          `http://localhost:5000/api/questions/summary/${userId}/${sessionId}`
+          `http://localhost:5000/api/questions/summary/${userId}/${idToFetch}`
         );
         setSummary(summaryRes.data);
 
         // 2. ✅ FETCH EMOTION DATA FROM DATABASE
         try {
           const emotionRes = await axios.get(
-            `http://localhost:5000/api/emotion/session/${sessionId}`
+            `http://localhost:5000/api/emotion/session/${idToFetch}`
           );
           
           console.log("🎭 Emotion API response:", emotionRes.data);
@@ -371,7 +376,7 @@ function SummaryPage() {
             
             // 3. ✅ FETCH EMOTION STATISTICS
             const statsRes = await axios.get(
-              `http://localhost:5000/api/emotion/session/${sessionId}/stats`
+              `http://localhost:5000/api/emotion/session/${idToFetch}/stats`
             );
             setEmotionStats(statsRes.data.stats);
             console.log("📈 Emotion stats:", statsRes.data.stats);

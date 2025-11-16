@@ -11,6 +11,10 @@ function QuestionPage() {
   const [listening, setListening] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [emotionData, setEmotionData] = useState([]);
+const [showRatingModal, setShowRatingModal] = useState(false);
+const [resumeRating, setResumeRating] = useState(0);
+const [adaptiveRating, setAdaptiveRating] = useState(0);
+const [feedback, setFeedback] = useState("");
 
   const navigate = useNavigate();
   const recognitionRef = useRef(null);
@@ -202,7 +206,8 @@ function QuestionPage() {
       } else {
         // 🆕 STOP CAMERA BEFORE NAVIGATING TO SUMMARY
         stopCamera();
-        navigate("/summary");
+        //navigate("/summary");
+        setShowRatingModal(true);
       }
     } catch (err) {
       console.error("❌ Failed to submit answer", err);
@@ -222,6 +227,151 @@ function QuestionPage() {
   }
 
   return (
+    <>
+   {showRatingModal && (
+  <div style={modalStyles.overlay}>
+    <div style={modalStyles.modal}>
+      <h2 style={{ marginBottom: 20 }}>Rate Your Experience</h2>
+
+      {/* Resume Extraction Rating */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontWeight: 600 }}>1. Give rating for Resume Extraction:</p>
+        <div style={modalStyles.stars}>
+          {[1,2,3,4,5].map((star) => (
+            <span
+              key={star}
+              onClick={() => setResumeRating(star)}
+              style={{
+                fontSize: 40,
+                cursor: "pointer",
+                color: star <= resumeRating ? "#F59E0B" : "#E5E7EB"
+              }}
+            >★</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Adaptive Questions Rating */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontWeight: 600 }}>2. Give rating for Adaptive Questions Generated:</p>
+        <div style={modalStyles.stars}>
+          {[1,2,3,4,5].map((star) => (
+            <span
+              key={star}
+              onClick={() => setAdaptiveRating(star)}
+              style={{
+                fontSize: 40,
+                cursor: "pointer",
+                color: star <= adaptiveRating ? "#F59E0B" : "#E5E7EB"
+              }}
+            >★</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Feedback */}
+      <div style={{ marginBottom: 20 }}>
+        <textarea
+          placeholder="Write your feedback (optional)"
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 10,
+            border: "1px solid #CBD5E0",
+            fontSize: 16,
+            resize: "vertical",
+            minHeight: 100,
+          }}
+        />
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 20 }}>
+        {/* Cancel Button */}
+        {/* Cancel Button */}
+  <button
+    onClick={() => setShowRatingModal(false)}
+    style={{
+      flex: 1,
+      padding: "14px 0",
+      background: "#E53E3E",
+      color: "white",
+      border: "none",
+      borderRadius: 12,
+      fontSize: 16,
+      fontWeight: 600,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.15)"
+    }}
+    onMouseEnter={(e) => {
+      e.target.style.background = "#C53030";
+      e.target.style.transform = "translateY(-2px)";
+      e.target.style.boxShadow = "0 6px 14px rgba(0,0,0,0.2)";
+    }}
+    onMouseLeave={(e) => {
+      e.target.style.background = "#E53E3E";
+      e.target.style.transform = "translateY(0)";
+      e.target.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+    }}
+  >
+    Cancel
+  </button>
+
+  {/* Submit Button */}
+  <button
+    onClick={async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        const sessionId = localStorage.getItem("sessionId");
+        await axios.post("http://localhost:5000/api/feedback", {
+          userId,
+          sessionId,
+          resumeRating,
+          adaptiveRating,
+          feedback
+        });
+      } catch (err) {
+        console.error("Failed to submit feedback", err);
+      } finally {
+        setShowRatingModal(false);
+        navigate("/summary");
+      }
+    }}
+    style={{
+      flex: 1,
+      padding: "14px 0",
+      background: "#667eea",
+      color: "white",
+      border: "none",
+      borderRadius: 12,
+      fontSize: 16,
+      fontWeight: 600,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.15)"
+    }}
+    onMouseEnter={(e) => {
+      e.target.style.background = "#5A67D8";
+      e.target.style.transform = "translateY(-2px)";
+      e.target.style.boxShadow = "0 6px 14px rgba(0,0,0,0.2)";
+    }}
+    onMouseLeave={(e) => {
+      e.target.style.background = "#667eea";
+      e.target.style.transform = "translateY(0)";
+      e.target.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+    }}
+  >
+    Submit Feedback
+  </button>
+</div>
+    </div>
+  </div>
+)}
+
+
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
@@ -323,6 +473,7 @@ function QuestionPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -478,6 +629,38 @@ const styles = {
     marginBottom: 20,
   },
   loadingText: { fontSize: "1.5rem", color: "white", fontWeight: "600" },
+  
+};
+const modalStyles = {
+  overlay: {
+    position: "fixed",
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000
+  },
+  modal: {
+    background: "white",
+    borderRadius: 12,
+    padding: 30,
+    width: "90%",
+    maxWidth: 400,
+    textAlign: "center",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+  },
+  button: {
+  padding: "12px 24px",
+  color: "white",
+  border: "none",
+  borderRadius: 12,
+  cursor: "pointer",
+  fontSize: 16,
+  fontWeight: "600",
+  flex: 1}
+
+
 };
 
 // CSS animations
