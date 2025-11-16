@@ -15,3 +15,6 @@ ALTER TABLE users
 ADD COLUMN is_verified TINYINT(1) DEFAULT 0 AFTER updated_at,
 ADD COLUMN verification_token VARCHAR(255) NULL AFTER is_verified,
 ADD COLUMN verification_token_expires DATETIME NULL AFTER verification_token;
+
+
+ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'candidate';

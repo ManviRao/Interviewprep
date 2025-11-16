@@ -5,7 +5,7 @@ const crypto = require('crypto');
 
 // Existing methods (keep these)
 const findUserByEmail = async (email) => {
-  const query = 'SELECT id, name, email, password_hash, ability, is_verified, verification_token, verification_token_expires FROM users WHERE email = ?';
+  const query = 'SELECT id, name, email, password_hash, role, ability, is_verified, verification_token, verification_token_expires FROM users WHERE email = ?';
   const [users] = await connection.execute(query, [email]);
   return users[0] || null;
 };
