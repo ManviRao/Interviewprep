@@ -22,6 +22,8 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const questionsRoutes = require("./routes/questions");
 const evaluateRoute = require("./routes/evaluate");
 const scraperRoutes = require('./routes/runScraper');//for scrape button page
+const sessionRoutes = require("./routes/sessions");
+const feedbackRoutes = require("./routes/feedback");
 
 
 app.use(express.json());
@@ -43,7 +45,10 @@ app.get("/", (_, res) => res.send("Adaptive Interview API running"));
 app.use("/api/questions", questionsRoutes);
 app.use("/api/evaluate", evaluateRoute);
 app.use("/api/run-scraper", scraperRoutes);
-app.use("/api/run-scraper", scraperRoutes); //for scrape button page
+app.use("/api/run-scraper", scraperRoutes); 
+app.use("/api/sessions", sessionRoutes);
+app.use("/api/feedback", feedbackRoutes);
+//for scrape button page
 //app.use("/api/emotion", emotionRoutes); // New emotion routes
 
 // ✅ CRON JOB SECTION

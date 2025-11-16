@@ -1,5 +1,7 @@
+
 const { mysql, DB_CONFIG } = require("../config/db");
 const emotionService = require("./emotionService");
+
 
 async function updateUserAbility(userId, questionId, isCorrect, emotionData = []) {
   const conn = await mysql.createConnection(DB_CONFIG);
@@ -32,14 +34,14 @@ const skill = skillRow?.topic || "General";
   const lr = 0.1;
   theta = theta + lr * ((isCorrect ? 1 : 0) - p) * emotionFactor;
 
-  await conn.execute(`
-  INSERT INTO user_skills (user_id, skill, final_ability, test_count, last_tested)
-  VALUES (?, ?, ?, 1, NOW())
-  ON DUPLICATE KEY UPDATE
-    final_ability = VALUES(final_ability),
-    test_count = test_count + 1,
-    last_tested = NOW()
-`, [userId, skill, theta]);
+//   await conn.execute(`
+//   INSERT INTO user_skills (user_id, skill, final_ability, test_count, last_tested)
+//   VALUES (?, ?, ?, 1, NOW())
+//   ON DUPLICATE KEY UPDATE
+//     final_ability = VALUES(final_ability),
+//     test_count = test_count + 1,
+//     last_tested = NOW()
+// `, [userId, skill, theta]);
 
 
   // Store emotion data if available

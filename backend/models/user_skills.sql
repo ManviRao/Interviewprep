@@ -10,3 +10,5 @@ CREATE TABLE user_skills (
       PRIMARY KEY (id),
       KEY (user_id)
     );
+    ALTER TABLE user_skills
+    ADD UNIQUE KEY unique_user_skill (user_id, skill);
