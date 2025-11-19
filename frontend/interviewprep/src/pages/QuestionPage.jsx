@@ -292,7 +292,7 @@ const [feedback, setFeedback] = useState("");
         {/* Cancel Button */}
         {/* Cancel Button */}
   <button
-    onClick={() => setShowRatingModal(false)}
+    onClick={() => {setShowRatingModal(false);   navigate("/summary",{ replace: true });}}
     style={{
       flex: 1,
       padding: "14px 0",
@@ -337,7 +337,8 @@ const [feedback, setFeedback] = useState("");
         console.error("Failed to submit feedback", err);
       } finally {
         setShowRatingModal(false);
-        navigate("/summary");
+          stopCamera();
+        navigate("/summary",{ replace: true });
       }
     }}
     style={{
@@ -466,10 +467,10 @@ const [feedback, setFeedback] = useState("");
         </button>
 
         <div style={styles.footer}>
-          <p style={styles.remainingText}>
+          {/* <p style={styles.remainingText}>
             Remaining Questions:{" "}
             <span style={styles.remainingCount}>{remainingQuestions}</span>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

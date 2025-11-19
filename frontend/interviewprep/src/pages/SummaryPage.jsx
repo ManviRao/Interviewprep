@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
+import Navbar from "@/components/Navbar";
 
 
 
@@ -424,6 +425,8 @@ const idToFetch = sessionId || localStorage.getItem("sessionId");
   const totalQuestions = summary.attempts.length;
 
   return (
+    <>
+   
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
@@ -587,7 +590,9 @@ const idToFetch = sessionId || localStorage.getItem("sessionId");
         )}
       </div>
     </div>
+     </>
   );
+ 
 }
 
 // Chart Styles

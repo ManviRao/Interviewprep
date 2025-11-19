@@ -125,7 +125,7 @@ const HistoryPage = () => {
   View your session history, track performance trends, and analyze skill-wise progress
 </p>
 
-        {/* Skills Overview Graph */}
+        {/* Skills Overview Graph
         {skillGraphData.length > 0 && (
           <div className="bg-white rounded-xl p-5 shadow-md mb-8 border">
             <h3 className="text-xl font-semibold mb-3 text-gray-800">🎯 Skills Overview</h3>
@@ -142,7 +142,7 @@ const HistoryPage = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        )}
+        )} */}
 
         {/* Score Trend Graph */}
         {sessions.length > 1 && (

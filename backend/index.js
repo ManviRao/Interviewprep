@@ -24,6 +24,7 @@ const evaluateRoute = require("./routes/evaluate");
 const scraperRoutes = require('./routes/runScraper');//for scrape button page
 const sessionRoutes = require("./routes/sessions");
 const feedbackRoutes = require("./routes/feedback");
+const emotionRoutes = require('./routes/emotion'); // New emotion routes
 const adminRoutes = require("./routes/adminRoutes");
 
 app.use(express.json());
@@ -45,7 +46,7 @@ app.get("/", (_, res) => res.send("Adaptive Interview API running"));
 app.use("/api/questions", questionsRoutes);
 app.use("/api/evaluate", evaluateRoute);
 app.use("/api/run-scraper", scraperRoutes);
-app.use("/api/run-scraper", scraperRoutes); 
+app.use("/api/emotion", emotionRoutes); 
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);

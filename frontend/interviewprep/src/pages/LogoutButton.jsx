@@ -1,13 +1,17 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const LogoutButton = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
       // Clear all authentication data
-      //localStorage.clear();
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userName');
+      // localStorage.clear(); // Be careful with this as it clears everything
+      
       // Redirect to login page
       navigate('/login');
       console.log('User logged out successfully');
@@ -17,8 +21,12 @@ const LogoutButton = () => {
   const isLoggedIn = !!localStorage.getItem("userId");
   const userName = localStorage.getItem("userName");
 
-  // Don't show logout button if not logged in
+  // Don't show logout button if not logged in OR if on auth pages
   if (!isLoggedIn) return null;
+  
+  // List of routes where logout button should NOT appear
+  const hideOnRoutes = ['/login', '/signup', '/register'];
+  if (hideOnRoutes.includes(location.pathname)) return null;
 
   return (
     <div style={{
